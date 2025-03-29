@@ -83,7 +83,6 @@ const CategoryCard = ({ title, icon, description, image, route, color, index }: 
             <Text style={styles.categoryDescription}>{description}</Text>
           </View>
           <View style={[styles.exploreButton, { backgroundColor: color }]}>
-            <Text style={styles.exploreButtonText}>Explore</Text>
             <Ionicons name="chevron-forward" size={16} color="white" />
           </View>
         </View>

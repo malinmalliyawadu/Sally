@@ -9,15 +9,18 @@ import LocationCard from './LocationCard';
 import PetrolStationCard from './PetrolStationCard';
 import WeatherCard from './WeatherCard';
 import JournalReminderCard from './JournalReminderCard';
+import AccommodationCard from './AccommodationCard';
 import { Colors } from '@/constants/Colors'; 
 import { 
   getCurrentLocation, 
   getNearbyPetrolStations, 
   getWeatherForecast,
+  getNearbyAccommodations,
   LocationData,
   PetrolStation,
   WeatherData
 } from '../../utils/locationService';
+import { Accommodation } from './AccommodationCard';
 
 const HEADER_MAX_HEIGHT = 220;
 const HEADER_MIN_HEIGHT = 0;
@@ -27,6 +30,7 @@ export default function Dashboard() {
   const [location, setLocation] = useState<LocationData | null>(null);
   const [petrolStation, setPetrolStation] = useState<PetrolStation | null>(null);
   const [weather, setWeather] = useState<WeatherData | null>(null);
+  const [accommodation, setAccommodation] = useState<Accommodation | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   
@@ -81,6 +85,13 @@ export default function Dashboard() {
           locationData.longitude
         );
         setWeather(weatherData);
+        
+        // Get accommodations
+        const accommodations = await getNearbyAccommodations(
+          locationData.latitude, 
+          locationData.longitude
+        );
+        setAccommodation(accommodations.length > 0 ? accommodations[0] : null);
       }
     } catch (error) {
       console.error('Error loading dashboard data:', error);
@@ -131,6 +142,7 @@ export default function Dashboard() {
         <View style={{ height: HEADER_MAX_HEIGHT }} />
         
         <JournalReminderCard location={location} isLoading={isLoading} />
+        <AccommodationCard accommodation={accommodation} isLoading={isLoading} />
         <PetrolStationCard petrolStation={petrolStation} isLoading={isLoading} />
         <WeatherCard weather={weather} isLoading={isLoading} />
       </Animated.ScrollView>
@@ -169,10 +181,6 @@ export default function Dashboard() {
             ]
           }
         ]}>
-          <View style={styles.vanIconContainer}>
-            <Ionicons name="car-sport" size={34} color={Colors.dark.accentOrange} />
-          </View>
-          
           <View style={styles.headerTitleContainer}>
             <Text style={styles.headerTitle}>Sally</Text>
             
