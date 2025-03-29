@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Linking, Platform, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
+import { LinearGradient } from 'expo-linear-gradient';
 
 export interface Accommodation {
   name: string;
@@ -59,9 +60,14 @@ export default function AccommodationCard({ accommodation, isLoading }: Accommod
   };
   
   return (
-    <View style={styles.card}>
+    <LinearGradient
+      colors={['#922B21', '#641E16']}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={styles.card}
+    >
       <View style={styles.iconContainer}>
-        <Ionicons name="bed" size={32} color={Colors.dark.accentPurple} />
+        <Ionicons name="bed" size={32} color="#FADBD8" />
       </View>
       <View style={styles.contentContainer}>
         <Text style={styles.title}>Stay Tonight</Text>
@@ -77,7 +83,7 @@ export default function AccommodationCard({ accommodation, isLoading }: Accommod
               <Ionicons 
                 name={getAccommodationIcon(accommodation.type)} 
                 size={14} 
-                color={Colors.dark.accentPurple} 
+                color="#FADBD8" 
               />
               <Text style={styles.typeText}>
                 {getAccommodationLabel(accommodation.type)}
@@ -109,28 +115,25 @@ export default function AccommodationCard({ accommodation, isLoading }: Accommod
           <Text style={styles.errorText}>No accommodation found nearby</Text>
         )}
       </View>
-    </View>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: Colors.dark.card,
     borderRadius: 16,
     padding: 16,
     marginBottom: 16,
     flexDirection: 'row',
     shadowColor: Colors.dark.shadow,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 5,
-    borderWidth: 1,
-    borderColor: Colors.dark.cardBorder,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    elevation: 8,
   },
   iconContainer: {
     marginRight: 16,
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
   },
   contentContainer: {
     flex: 1,
@@ -139,12 +142,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     marginBottom: 8,
-    color: Colors.dark.textSecondary,
+    color: 'rgba(255, 255, 255, 0.9)',
   },
   accommodationName: {
     fontSize: 20,
     fontWeight: '700',
-    color: Colors.dark.text,
+    color: 'white',
     marginBottom: 4,
   },
   typeContainer: {
@@ -155,23 +158,23 @@ const styles = StyleSheet.create({
   typeText: {
     fontSize: 14,
     fontWeight: '500',
-    color: Colors.dark.accentPurple,
+    color: "#FADBD8",
     marginLeft: 6,
     marginRight: 8,
   },
   priceText: {
     fontSize: 14,
     fontWeight: '600',
-    color: Colors.dark.textSecondary,
+    color: 'rgba(255, 255, 255, 0.8)',
   },
   distance: {
     fontSize: 14,
-    color: Colors.dark.tint,
+    color: 'rgba(255, 255, 255, 0.8)',
     marginBottom: 4,
   },
   address: {
     fontSize: 14,
-    color: Colors.dark.textSecondary,
+    color: 'rgba(255, 255, 255, 0.8)',
     marginBottom: 10,
   },
   amenitiesContainer: {
@@ -181,7 +184,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   amenityTag: {
-    backgroundColor: 'rgba(155, 89, 182, 0.15)',
+    backgroundColor: 'rgba(219, 145, 140, 0.2)',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
@@ -190,15 +193,15 @@ const styles = StyleSheet.create({
   },
   amenityText: {
     fontSize: 12,
-    color: Colors.dark.text,
+    color: 'white',
   },
   moreAmenities: {
     fontSize: 12,
-    color: Colors.dark.textSecondary,
+    color: 'rgba(255, 255, 255, 0.7)',
     marginLeft: 4,
   },
   directionsButton: {
-    backgroundColor: Colors.dark.accentPurple,
+    backgroundColor: '#922B21',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -219,12 +222,12 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: 16,
-    color: Colors.dark.textSecondary,
+    color: 'rgba(255, 255, 255, 0.8)',
     fontStyle: 'italic',
     marginLeft: 8,
   },
   errorText: {
     fontSize: 16,
-    color: Colors.dark.accentRed,
+    color: '#FADBD8',
   },
 }); 

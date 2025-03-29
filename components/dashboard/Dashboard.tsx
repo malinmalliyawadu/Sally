@@ -5,7 +5,6 @@ import * as Location from 'expo-location';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 
-import LocationCard from './LocationCard';
 import PetrolStationCard from './PetrolStationCard';
 import WeatherCard from './WeatherCard';
 import JournalReminderCard from './JournalReminderCard';
@@ -182,18 +181,17 @@ export default function Dashboard() {
           }
         ]}>
           <View style={styles.headerTitleContainer}>
+            <View style={styles.headerRow}>
             <Text style={styles.headerTitle}>Sally</Text>
-            
-            <View style={styles.subtitleRow}>
               <Ionicons 
                 name="compass" 
-                size={16} 
+                size={48} 
                 color={Colors.dark.tint} 
                 style={styles.subtitleIcon}
               />
-              <Text style={styles.headerSubtitle}>Van Life Dashboard</Text>
+              
             </View>
-            
+
             {location && (
               <View style={styles.locationBadge}>
                 <Ionicons name="location" size={12} color="white" />
@@ -252,12 +250,12 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    backgroundColor: 'rgba(255,165,0,0.5)',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.5)',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
@@ -271,26 +269,25 @@ const styles = StyleSheet.create({
     paddingTop: 0, // The header height takes care of this
   },
   headerTitle: {
-    fontSize: 38,
-    fontWeight: '800',
+    fontFamily: 'Pacifico-Regular',
+    fontSize: 40,
     color: Colors.dark.text,
     marginBottom: 4,
-    letterSpacing: 1,
     textShadowColor: 'rgba(0, 0, 0, 0.75)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
   },
-  subtitleRow: {
+  headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    gap: 10,
   },
   subtitleIcon: {
     marginRight: 6,
   },
   headerSubtitle: {
+    fontFamily: 'Poppins-SemiBold',
     fontSize: 16,
-    fontWeight: '600',
     color: Colors.dark.text,
     textShadowColor: 'rgba(0, 0, 0, 0.75)',
     textShadowOffset: { width: 0, height: 1 },
@@ -308,8 +305,8 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(78, 205, 196, 0.5)',
   },
   locationText: {
+    fontFamily: 'Poppins-SemiBold',
     fontSize: 12,
-    fontWeight: '600',
     color: 'white',
     marginLeft: 4,
   },

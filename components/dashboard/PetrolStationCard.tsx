@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Linking, Platform, ActivityIn
 import { Ionicons } from '@expo/vector-icons';
 import { PetrolStation } from '../../utils/locationService';
 import { Colors } from '@/constants/Colors';
+import { LinearGradient } from 'expo-linear-gradient';
 
 interface PetrolStationCardProps {
   petrolStation: PetrolStation | null;
@@ -27,9 +28,14 @@ export default function PetrolStationCard({ petrolStation, isLoading }: PetrolSt
   };
   
   return (
-    <View style={styles.card}>
+    <LinearGradient
+      colors={[Colors.dark.accentGreen, '#1A5D3A']}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={styles.card}
+    >
       <View style={styles.iconContainer}>
-        <Ionicons name="car" size={32} color={Colors.dark.accentGreen} />
+        <Ionicons name="car" size={32} color="#ABEBC6" />
       </View>
       <View style={styles.contentContainer}>
         <Text style={styles.title}>Nearest Petrol Station</Text>
@@ -52,28 +58,25 @@ export default function PetrolStationCard({ petrolStation, isLoading }: PetrolSt
           <Text style={styles.errorText}>No petrol stations found nearby</Text>
         )}
       </View>
-    </View>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: Colors.dark.card,
     borderRadius: 16,
     padding: 16,
     marginBottom: 16,
     flexDirection: 'row',
     shadowColor: Colors.dark.shadow,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 5,
-    borderWidth: 1,
-    borderColor: Colors.dark.cardBorder,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    elevation: 8,
   },
   iconContainer: {
     marginRight: 16,
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
   },
   contentContainer: {
     flex: 1,
@@ -82,23 +85,23 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     marginBottom: 4,
-    color: Colors.dark.textSecondary,
+    color: 'rgba(255, 255, 255, 0.9)',
   },
   stationName: {
     fontSize: 20,
     fontWeight: '700',
-    color: Colors.dark.text,
+    color: 'white',
     marginBottom: 2,
   },
   distance: {
     fontSize: 16,
     fontWeight: '500',
-    color: Colors.dark.accentGreen,
+    color: '#ABEBC6',
     marginBottom: 2,
   },
   address: {
     fontSize: 14,
-    color: Colors.dark.textSecondary,
+    color: 'rgba(255, 255, 255, 0.8)',
     marginBottom: 8,
   },
   directionsButton: {
@@ -123,12 +126,12 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: 16,
-    color: Colors.dark.textSecondary,
+    color: 'rgba(255, 255, 255, 0.8)',
     fontStyle: 'italic',
     marginLeft: 8,
   },
   errorText: {
     fontSize: 16,
-    color: Colors.dark.accentRed,
+    color: '#ABEBC6',
   },
 }); 

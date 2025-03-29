@@ -25,33 +25,24 @@ export default function WeatherCard({ weather, isLoading }: WeatherCardProps) {
   };
 
   const getBackgroundColors = (condition: string, index: number): [string, string] => {
-    const lowercaseCondition = condition.toLowerCase();
-    const isNight = index > 6 && index < 18;
-
-    if (lowercaseCondition.includes('clear') && isNight) {
-      return ['#1A237E', '#0D47A1'];
-    } else if (lowercaseCondition.includes('clear')) {
-      return ['#1565C0', '#2196F3'];
-    } else if (lowercaseCondition.includes('cloud') && isNight) {
-      return ['#263238', '#37474F'];
-    } else if (lowercaseCondition.includes('cloud')) {
-      return ['#455A64', '#607D8B'];
-    } else if (lowercaseCondition.includes('rain')) {
-      return ['#0277BD', '#0288D1'];
-    } else {
-      return ['#263238', '#37474F'];
-    }
+    // Return the same translucent colors for all weather conditions
+    return ['rgba(0, 0, 0, 0.3)', 'rgba(0, 0, 0, 0.15)'];
   };
   
   return (
-    <View style={styles.card}>
+    <LinearGradient
+      colors={[Colors.dark.accentOrange, 'rgba(135, 72, 0, 1)']}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={styles.card}
+    >
       <LinearGradient
         colors={['rgba(0,0,0,0.4)', 'transparent']}
         style={styles.cardGradient}
       />
       
       <View style={styles.titleContainer}>
-        <Ionicons name="partly-sunny" size={24} color={Colors.dark.accentOrange} />
+        <Ionicons name="partly-sunny" size={24} color="#FDEBD0" />
         <Text style={styles.title}>Weather Forecast</Text>
       </View>
       
@@ -90,23 +81,20 @@ export default function WeatherCard({ weather, isLoading }: WeatherCardProps) {
       ) : (
         <Text style={styles.errorText}>Unable to fetch weather data</Text>
       )}
-    </View>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: Colors.dark.card,
     borderRadius: 16,
     padding: 16,
     marginBottom: 16,
     shadowColor: Colors.dark.shadow,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 5,
-    borderWidth: 1,
-    borderColor: Colors.dark.cardBorder,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    elevation: 8,
     overflow: 'hidden',
     position: 'relative',
   },
@@ -126,7 +114,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
     marginLeft: 8,
-    color: Colors.dark.text,
+    color: 'white',
   },
   currentWeather: {
     alignItems: 'center',
@@ -183,14 +171,14 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: 16,
-    color: Colors.dark.textSecondary,
+    color: 'rgba(255, 255, 255, 0.8)',
     fontStyle: 'italic',
     textAlign: 'center',
     marginTop: 12,
   },
   errorText: {
     fontSize: 16,
-    color: Colors.dark.accentRed,
+    color: '#FDEBD0',
     textAlign: 'center',
     marginVertical: 12,
   },

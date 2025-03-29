@@ -5,6 +5,7 @@ import { useRouter } from 'expo-router';
 import { LocationData } from '../../utils/locationService';
 import { getJournalEntries, JournalEntry } from '../../utils/journalService';
 import { Colors } from '@/constants/Colors';
+import { LinearGradient } from 'expo-linear-gradient';
 
 interface JournalReminderCardProps {
   location: LocationData | null;
@@ -72,9 +73,14 @@ export default function JournalReminderCard({ location, isLoading }: JournalRemi
   };
 
   return (
-    <View style={styles.card}>
+    <LinearGradient
+      colors={[Colors.dark.accentPurple, '#5B2C6F']}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={styles.card}
+    >
       <View style={styles.iconContainer}>
-        <Ionicons name="book" size={32} color={Colors.dark.accentPurple} />
+        <Ionicons name="book" size={32} color="#D7BDE2" />
       </View>
       <View style={styles.contentContainer}>
         <Text style={styles.title}>Journal Reminder</Text>
@@ -112,28 +118,25 @@ export default function JournalReminderCard({ location, isLoading }: JournalRemi
           </>
         )}
       </View>
-    </View>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: Colors.dark.card,
     borderRadius: 16,
     padding: 16,
     marginBottom: 16,
     flexDirection: 'row',
     shadowColor: Colors.dark.shadow,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 5,
-    borderWidth: 1,
-    borderColor: Colors.dark.cardBorder,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    elevation: 8,
   },
   iconContainer: {
     marginRight: 16,
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
   },
   contentContainer: {
     flex: 1,
@@ -142,11 +145,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     marginBottom: 4,
-    color: Colors.dark.textSecondary,
+    color: 'rgba(255, 255, 255, 0.9)',
   },
   journalStatus: {
     fontSize: 16,
-    color: Colors.dark.text,
+    color: 'white',
     marginBottom: 2,
   },
   locationText: {
@@ -154,13 +157,13 @@ const styles = StyleSheet.create({
   },
   timeText: {
     fontSize: 14,
-    color: Colors.dark.textSecondary,
+    color: 'rgba(255, 255, 255, 0.8)',
     marginBottom: 6,
   },
   reminderText: {
     fontSize: 14,
     fontStyle: 'italic',
-    color: Colors.dark.accentPurple,
+    color: '#D7BDE2',
     marginBottom: 10,
   },
   addButton: {
@@ -185,14 +188,14 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: 16,
-    color: Colors.dark.textSecondary,
+    color: 'rgba(255, 255, 255, 0.8)',
     fontStyle: 'italic',
     marginLeft: 8,
   },
   emptyText: {
     fontSize: 16,
     fontWeight: '500',
-    color: Colors.dark.text,
+    color: 'white',
     marginBottom: 2,
   },
 }); 
