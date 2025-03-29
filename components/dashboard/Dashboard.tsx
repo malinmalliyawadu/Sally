@@ -267,6 +267,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     padding: 16,
     paddingTop: 0, // The header height takes care of this
+    paddingBottom: 80, // Added extra padding for the tab bar
   },
   headerTitle: {
     fontFamily: 'Pacifico-Regular',

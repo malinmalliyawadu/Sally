@@ -3,6 +3,7 @@ import React from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import { HapticTab } from '@/components/HapticTab';
 import { IconSymbol } from '@/components/ui/IconSymbol';
@@ -25,11 +26,21 @@ export default function TabLayout() {
         tabBarButton: HapticTab,
         tabBarBackground: () => (
           <BlurView 
-            intensity={100} 
-            tint="dark" 
+            intensity={20} 
             style={StyleSheet.absoluteFill}
           >
-            <View style={styles.tabBarOverlay} />
+            <LinearGradient 
+              colors={[
+                'rgba(18, 18, 18, 0)',
+                // 'rgba(18, 18, 18, 0.3)',
+                'rgba(18, 18, 18, 0.8)', 
+                'rgba(18, 18, 18, 0.95)',
+                Colors.dark.background
+              ]}
+              style={StyleSheet.absoluteFill}
+              start={{ x: 0, y: -0.2 }}
+              end={{ x: 0, y: 0.8 }}
+            />
           </BlurView>
         ),
         tabBarStyle: {
@@ -44,10 +55,11 @@ export default function TabLayout() {
         tabBarLabelStyle: {
           fontWeight: '600',
           fontSize: 12,
-          marginTop: -5,
+          marginTop: 0,
         },
         tabBarIconStyle: {
           marginTop: 5,
+          marginBottom: 4,
         },
       }}>
       <Tabs.Screen
@@ -91,10 +103,5 @@ export default function TabLayout() {
 }
 
 const styles = StyleSheet.create({
-  tabBarOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(18, 18, 18, 0.75)',
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(52, 57, 65, 0.8)',
-  }
+  // Remove tabBarOverlay and tabBarGradient styles since we're no longer using them
 });
