@@ -1,7 +1,8 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Linking, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Linking, Platform, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { PetrolStation } from '../../utils/locationService';
+import { Colors } from '@/constants/Colors';
 
 interface PetrolStationCardProps {
   petrolStation: PetrolStation | null;
@@ -28,12 +29,15 @@ export default function PetrolStationCard({ petrolStation, isLoading }: PetrolSt
   return (
     <View style={styles.card}>
       <View style={styles.iconContainer}>
-        <Ionicons name="car" size={32} color="#4CAF50" />
+        <Ionicons name="car" size={32} color={Colors.dark.accentGreen} />
       </View>
       <View style={styles.contentContainer}>
         <Text style={styles.title}>Nearest Petrol Station</Text>
         {isLoading ? (
-          <Text style={styles.loadingText}>Finding petrol stations...</Text>
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="small" color={Colors.dark.tint} />
+            <Text style={styles.loadingText}>Finding petrol stations...</Text>
+          </View>
         ) : petrolStation ? (
           <>
             <Text style={styles.stationName}>{petrolStation.name}</Text>
@@ -54,16 +58,18 @@ export default function PetrolStationCard({ petrolStation, isLoading }: PetrolSt
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: 'white',
+    backgroundColor: Colors.dark.card,
     borderRadius: 16,
     padding: 16,
     marginBottom: 16,
     flexDirection: 'row',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowColor: Colors.dark.shadow,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 5,
+    borderWidth: 1,
+    borderColor: Colors.dark.cardBorder,
   },
   iconContainer: {
     marginRight: 16,
@@ -76,27 +82,27 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     marginBottom: 4,
-    color: '#333',
+    color: Colors.dark.textSecondary,
   },
   stationName: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#0D0D0D',
+    color: Colors.dark.text,
     marginBottom: 2,
   },
   distance: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#4CAF50',
+    color: Colors.dark.accentGreen,
     marginBottom: 2,
   },
   address: {
     fontSize: 14,
-    color: '#666',
+    color: Colors.dark.textSecondary,
     marginBottom: 8,
   },
   directionsButton: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: Colors.dark.accentGreen,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -110,13 +116,19 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginLeft: 6,
   },
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+  },
   loadingText: {
     fontSize: 16,
-    color: '#666',
+    color: Colors.dark.textSecondary,
     fontStyle: 'italic',
+    marginLeft: 8,
   },
   errorText: {
     fontSize: 16,
-    color: '#E53935',
+    color: Colors.dark.accentRed,
   },
 }); 
