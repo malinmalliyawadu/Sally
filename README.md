@@ -2,7 +2,7 @@
   
 # Sally 🚐
 
-#### *Van Life Companion App for Aotearoa* 🌿🌊
+#### *Van life companion app for Aotearoa* 🌿🌊
 
 </div>
 
