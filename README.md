@@ -4,6 +4,8 @@
 
 #### *Van life companion app for Aotearoa* 🌿🌊
 
+<img src="screenshot.png" alt="Sally App Screenshot" width="300" />
+
 </div>
 
 Sally is a comprehensive mobile application designed to enhance your van life experience in Aotearoa (New Zealand). Built with [Expo](https://expo.dev), this app provides essential tools and information for travelers exploring NZ by van.
