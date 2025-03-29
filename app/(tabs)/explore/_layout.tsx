@@ -15,7 +15,16 @@ export default function ExploreLayout() {
         contentStyle: {
           backgroundColor: Colors.dark.background,
         },
+        headerBackTitle: "Explore",
       }}
-    />
+    >
+      <Stack.Screen 
+        name="index" 
+        options={{ 
+          headerShown: false,
+          title: "Explore"
+        }} 
+      />
+    </Stack>
   );
 } 

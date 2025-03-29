@@ -59,7 +59,7 @@ export default function ExploreScreen() {
       title: 'Hiking Trails',
       icon: 'trail-sign',
       description: 'Discover beautiful trails and natural wonders nearby',
-      image: require('@/assets/images/backgrounds/nz-landscape.jpg'),
+      image: require('@/assets/images/backgrounds/mt-aspiring.jpg'),
       route: '/(tabs)/explore/hikes',
       color: Colors.dark.accentGreen,
     },
@@ -67,7 +67,7 @@ export default function ExploreScreen() {
       title: 'Local Events',
       icon: 'calendar',
       description: 'Find events, festivals, and activities happening now',
-      image: require('@/assets/images/backgrounds/nz-landscape.jpg'),
+      image: require('@/assets/images/backgrounds/concert.jpg'),
       route: '/(tabs)/explore/events',
       color: Colors.dark.accentOrange,
     },
@@ -75,7 +75,7 @@ export default function ExploreScreen() {
       title: 'Essentials',
       icon: 'cart',
       description: 'Locate laundromats, supermarkets, and other necessities',
-      image: require('@/assets/images/backgrounds/nz-landscape.jpg'),
+      image: require('@/assets/images/backgrounds/supermarket.jpg'),
       route: '/(tabs)/explore/essentials',
       color: Colors.dark.accentBlue,
     },
@@ -83,7 +83,7 @@ export default function ExploreScreen() {
       title: 'Food',
       icon: 'restaurant',
       description: 'Top-rated restaurants and cafes in the area',
-      image: require('@/assets/images/backgrounds/nz-landscape.jpg'),
+      image: require('@/assets/images/backgrounds/burger.jpg'),
       route: '/(tabs)/explore/food',
       color: Colors.dark.accentPurple,
     },
@@ -102,8 +102,6 @@ export default function ExploreScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.sectionTitle}>Categories</Text>
-        
         {categories.map((category, index) => (
           <CategoryCard key={index} {...category} />
         ))}

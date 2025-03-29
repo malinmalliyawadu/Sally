@@ -150,7 +150,7 @@ export default function Dashboard() {
           { opacity: fadeAnim }
         ]}>
           <Image 
-            source={require('@/assets/images/backgrounds/nz-landscape.jpg')} 
+            source={require('@/assets/images/backgrounds/mt-aspiring.jpg')} 
             style={styles.backgroundImage}
             resizeMode="cover"
           />
