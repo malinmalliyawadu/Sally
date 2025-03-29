@@ -8,22 +8,13 @@
 
 Sally is a comprehensive mobile application designed to enhance your van life experience in Aotearoa (New Zealand). Built with [Expo](https://expo.dev), this app provides essential tools and information for travelers exploring NZ by van.
 
-## Features 🌟
-
-- **🏕️ Location-based campsite finder**
-- **🏞️ Points of interest and scenic routes**
-- **☀️ Local weather forecasts**
-- **♻️ Waste station locator**
-- **🆘 Emergency services information**
-- **🗺️ Trip planning tools**
-
 ## Getting Started 🚀
 
 ### Prerequisites
 
-- Node.js (18.x or newer)
-- npm or yarn
-- iOS Simulator or Android Emulator (optional for development)
+- Node.js
+- XCode
+- Android Studio
 
 ### Installation
 
@@ -36,7 +27,7 @@ Sally is a comprehensive mobile application designed to enhance your van life ex
 
 3. Start the application
    ```bash
-   npx expo start
+   npm run start
    ```
 
    This will open the Expo development server with options to run the app on:
