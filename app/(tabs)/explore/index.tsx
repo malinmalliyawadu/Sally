@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { 
   StyleSheet, 
   View, 
@@ -24,37 +24,86 @@ interface CategoryCardProps {
   image: any;
   route: ExploreRoute;
   color: string;
+  index: number;
 }
 
-const CategoryCard = ({ title, icon, description, image, route, color }: CategoryCardProps) => {
+const CategoryCard = ({ title, icon, description, image, route, color, index }: CategoryCardProps) => {
+  const opacity = useRef(new Animated.Value(0)).current;
+  const translateY = useRef(new Animated.Value(50)).current;
+  
+  React.useEffect(() => {
+    Animated.parallel([
+      Animated.timing(opacity, {
+        toValue: 1,
+        duration: 600,
+        delay: index * 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(translateY, {
+        toValue: 0,
+        duration: 600,
+        delay: index * 100,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
+  
   return (
-    <TouchableOpacity 
-      style={styles.categoryCard}
-      onPress={() => router.push(route)}
-      activeOpacity={0.9}
+    <Animated.View
+      style={{
+        opacity,
+        transform: [{ translateY }],
+      }}
     >
-      <Image 
-        source={image} 
-        style={styles.categoryImage} 
-        resizeMode="cover"
-      />
-      <LinearGradient
-        colors={['transparent', 'rgba(0,0,0,0.7)', 'rgba(0,0,0,0.9)']}
-        style={styles.categoryGradient}
-      />
-      <View style={styles.categoryContent}>
-        <View style={[styles.iconCircle, { backgroundColor: color }]}>
-          <Ionicons name={icon} size={24} color="white" />
+      <TouchableOpacity 
+        style={[styles.categoryCard, { borderColor: color }]}
+        onPress={() => router.push(route)}
+        activeOpacity={0.8}
+      >
+        <Image 
+          source={image} 
+          style={styles.categoryImage} 
+          resizeMode="cover"
+        />
+        <View style={styles.categoryOverlay} />
+        <LinearGradient
+          colors={[
+            'transparent', 
+            'rgba(0,0,0,0.6)', 
+            'rgba(0,0,0,0.85)'
+          ]}
+          style={styles.categoryGradient}
+        />
+        <View style={styles.categoryContent}>
+          <View style={[styles.iconCircle, { backgroundColor: color }]}>
+            <Ionicons name={icon} size={24} color="white" />
+          </View>
+          <View style={styles.textContainer}>
+            <Text style={styles.categoryTitle}>{title}</Text>
+            <Text style={styles.categoryDescription}>{description}</Text>
+          </View>
+          <View style={[styles.exploreButton, { backgroundColor: color }]}>
+            <Text style={styles.exploreButtonText}>Explore</Text>
+            <Ionicons name="chevron-forward" size={16} color="white" />
+          </View>
         </View>
-        <Text style={styles.categoryTitle}>{title}</Text>
-        <Text style={styles.categoryDescription}>{description}</Text>
-      </View>
-    </TouchableOpacity>
+      </TouchableOpacity>
+    </Animated.View>
   );
 };
 
 export default function ExploreScreen() {
-  const categories: CategoryCardProps[] = [
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  
+  React.useEffect(() => {
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 600,
+      useNativeDriver: true,
+    }).start();
+  }, []);
+  
+  const categories: Omit<CategoryCardProps, 'index'>[] = [
     {
       title: 'Hiking Trails',
       icon: 'trail-sign',
@@ -93,19 +142,27 @@ export default function ExploreScreen() {
     <View style={styles.container}>
       <StatusBar style="light" />
       
-      <View style={styles.header}>
+      <Animated.View 
+        style={[
+          styles.header,
+          { opacity: fadeAnim }
+        ]}
+      >
         <Text style={styles.title}>Explore</Text>
         <Text style={styles.subtitle}>Discover what's nearby</Text>
-      </View>
+      </Animated.View>
       
       <ScrollView 
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
         {categories.map((category, index) => (
-          <CategoryCard key={index} {...category} />
+          <CategoryCard 
+            key={index} 
+            {...category} 
+            index={index}
+          />
         ))}
-        
       </ScrollView>
     </View>
   );
@@ -124,12 +181,13 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
   },
   title: {
-    fontSize: 34,
+    fontSize: 36,
     fontWeight: '800',
     color: Colors.dark.text,
+    letterSpacing: 0.5,
   },
   subtitle: {
-    fontSize: 17,
+    fontSize: 18,
     color: Colors.dark.textSecondary,
     marginTop: 4,
   },
@@ -137,52 +195,91 @@ const styles = StyleSheet.create({
     padding: 16,
     paddingBottom: 100, // extra padding for bottom tab bar
   },
-  sectionTitle: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: Colors.dark.text,
-    marginBottom: 16,
-  },
   categoryCard: {
-    height: 180,
-    borderRadius: 16,
-    marginBottom: 16,
+    height: 190,
+    borderRadius: 20,
+    marginBottom: 24,
     overflow: 'hidden',
     position: 'relative',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 8,
   },
   categoryImage: {
     width: '100%',
     height: '100%',
     position: 'absolute',
   },
+  categoryOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.2)',
+  },
   categoryGradient: {
     position: 'absolute',
     left: 0,
     right: 0,
-    top: 0,
-    height: '100%',
+    bottom: 0,
+    height: '70%',
   },
   categoryContent: {
     position: 'relative',
     padding: 16,
     height: '100%',
-    justifyContent: 'flex-end',
+    justifyContent: 'space-between',
+  },
+  textContainer: {
+    position: 'absolute',
+    bottom: 16,
+    left: 16,
+    right: 16,
   },
   iconCircle: {
     position: 'absolute',
     top: 16,
     right: 16,
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.3)',
+  },
+  exploreButton: {
+    position: 'absolute',
+    bottom: 16,
+    right: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  exploreButtonText: {
+    color: 'white',
+    fontWeight: '600',
+    fontSize: 12,
+    marginRight: 4,
   },
   categoryTitle: {
-    fontSize: 24,
-    fontWeight: '700',
+    fontSize: 26,
+    fontWeight: '800',
     color: 'white',
-    marginBottom: 4,
+    marginBottom: 6,
     textShadowColor: 'rgba(0, 0, 0, 0.75)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 3,
@@ -193,5 +290,7 @@ const styles = StyleSheet.create({
     textShadowColor: 'rgba(0, 0, 0, 0.5)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
+    lineHeight: 20,
+    marginRight: 80, // Make space for the button
   },
 }); 

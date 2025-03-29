@@ -3,6 +3,7 @@ import { View, StyleSheet, RefreshControl, Text, Image, Animated } from 'react-n
 import { StatusBar } from 'expo-status-bar';
 import * as Location from 'expo-location';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 
 import LocationCard from './LocationCard';
 import PetrolStationCard from './PetrolStationCard';
@@ -18,7 +19,7 @@ import {
   WeatherData
 } from '../../utils/locationService';
 
-const HEADER_MAX_HEIGHT = 200;
+const HEADER_MAX_HEIGHT = 220;
 const HEADER_MIN_HEIGHT = 0;
 const HEADER_SCROLL_DISTANCE = HEADER_MAX_HEIGHT - HEADER_MIN_HEIGHT;
 
@@ -129,7 +130,6 @@ export default function Dashboard() {
         {/* Add padding to the top to account for the header */}
         <View style={{ height: HEADER_MAX_HEIGHT }} />
         
-        <LocationCard location={location} isLoading={isLoading} />
         <JournalReminderCard location={location} isLoading={isLoading} />
         <PetrolStationCard petrolStation={petrolStation} isLoading={isLoading} />
         <WeatherCard weather={weather} isLoading={isLoading} />
@@ -155,7 +155,7 @@ export default function Dashboard() {
             resizeMode="cover"
           />
           <LinearGradient
-            colors={['rgba(0,0,0,0.3)', 'rgba(0,0,0,0.7)', Colors.dark.background]}
+            colors={['rgba(0,0,0,0.4)', 'rgba(0,0,0,0.7)', Colors.dark.background]}
             style={styles.headerGradient}
           />
         </Animated.View>
@@ -169,8 +169,30 @@ export default function Dashboard() {
             ]
           }
         ]}>
-          <Text style={styles.headerTitle}>Sally</Text>
-          <Text style={styles.headerSubtitle}>Van Life Dashboard</Text>
+          <View style={styles.vanIconContainer}>
+            <Ionicons name="car-sport" size={34} color={Colors.dark.accentOrange} />
+          </View>
+          
+          <View style={styles.headerTitleContainer}>
+            <Text style={styles.headerTitle}>Sally</Text>
+            
+            <View style={styles.subtitleRow}>
+              <Ionicons 
+                name="compass" 
+                size={16} 
+                color={Colors.dark.tint} 
+                style={styles.subtitleIcon}
+              />
+              <Text style={styles.headerSubtitle}>Van Life Dashboard</Text>
+            </View>
+            
+            {location && (
+              <View style={styles.locationBadge}>
+                <Ionicons name="location" size={12} color="white" />
+                <Text style={styles.locationText}>{location.placeName}</Text>
+              </View>
+            )}
+          </View>
         </Animated.View>
       </Animated.View>
     </View>
@@ -210,31 +232,77 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   headerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingTop: 60,
     paddingBottom: 20,
     paddingHorizontal: 16,
     position: 'relative',
     zIndex: 2,
   },
+  vanIconContainer: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.3)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+  },
+  headerTitleContainer: {
+    flex: 1,
+  },
   scrollContent: {
     padding: 16,
     paddingTop: 0, // The header height takes care of this
   },
   headerTitle: {
-    fontSize: 36,
+    fontSize: 38,
     fontWeight: '800',
     color: Colors.dark.text,
     marginBottom: 4,
+    letterSpacing: 1,
     textShadowColor: 'rgba(0, 0, 0, 0.75)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 3,
   },
-  headerSubtitle: {
-    fontSize: 18,
-    color: Colors.dark.text,
+  subtitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 8,
+  },
+  subtitleIcon: {
+    marginRight: 6,
+  },
+  headerSubtitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.dark.text,
     textShadowColor: 'rgba(0, 0, 0, 0.75)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
+  },
+  locationBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(78, 205, 196, 0.3)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 16,
+    alignSelf: 'flex-start',
+    borderWidth: 1,
+    borderColor: 'rgba(78, 205, 196, 0.5)',
+  },
+  locationText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: 'white',
+    marginLeft: 4,
   },
 }); 
