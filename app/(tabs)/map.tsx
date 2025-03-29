@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { StyleSheet, View, Text, ActivityIndicator, TouchableOpacity, Dimensions } from 'react-native';
-import MapView, { Marker, PROVIDER_GOOGLE, MapStyleElement } from 'react-native-maps';
+import { StyleSheet, View, Text, ActivityIndicator, TouchableOpacity, Dimensions, Platform } from 'react-native';
+import MapView, { Marker, PROVIDER_DEFAULT, MapStyleElement } from 'react-native-maps';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -192,6 +192,7 @@ export default function MapScreen() {
   const [location, setLocation] = useState<LocationData | null>(null);
   const [petrolStations, setPetrolStations] = useState<PetrolStation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [mapReady, setMapReady] = useState(false);
   const mapRef = useRef<MapView>(null);
 
   useEffect(() => {
@@ -218,7 +219,7 @@ export default function MapScreen() {
   }, []);
 
   const centerOnUserLocation = () => {
-    if (mapRef.current && location) {
+    if (mapRef.current && location && mapReady) {
       mapRef.current.animateToRegion({
         latitude: location.latitude,
         longitude: location.longitude,
@@ -226,6 +227,10 @@ export default function MapScreen() {
         longitudeDelta: 0.05,
       }, 1000);
     }
+  };
+
+  const handleMapReady = () => {
+    setMapReady(true);
   };
 
   if (isLoading) {
@@ -253,10 +258,11 @@ export default function MapScreen() {
     <View style={styles.container}>
       <StatusBar style="light" />
       
+      {/* Use the default provider to prevent native module issues */}
       <MapView
         ref={mapRef}
         style={styles.map}
-        provider={PROVIDER_GOOGLE}
+        provider={Platform.OS === 'android' ? PROVIDER_DEFAULT : undefined}
         initialRegion={{
           latitude: location.latitude,
           longitude: location.longitude,
@@ -267,8 +273,10 @@ export default function MapScreen() {
         showsUserLocation={true}
         showsMyLocationButton={false}
         showsCompass={true}
+        onMapReady={handleMapReady}
+        onLayout={() => {}}
       >
-        {petrolStations.map((station, index) => (
+        {mapReady && petrolStations.map((station, index) => (
           <Marker
             key={index}
             coordinate={{
