@@ -7,6 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import LocationCard from './LocationCard';
 import PetrolStationCard from './PetrolStationCard';
 import WeatherCard from './WeatherCard';
+import JournalReminderCard from './JournalReminderCard';
 import { Colors } from '@/constants/Colors'; 
 import { 
   getCurrentLocation, 
@@ -129,6 +130,7 @@ export default function Dashboard() {
         <View style={{ height: HEADER_MAX_HEIGHT }} />
         
         <LocationCard location={location} isLoading={isLoading} />
+        <JournalReminderCard location={location} isLoading={isLoading} />
         <PetrolStationCard petrolStation={petrolStation} isLoading={isLoading} />
         <WeatherCard weather={weather} isLoading={isLoading} />
       </Animated.ScrollView>

@@ -62,13 +62,6 @@ export default function WeatherCard({ weather, isLoading }: WeatherCardProps) {
         </View>
       ) : weather ? (
         <>
-          <View style={styles.currentWeather}>
-            <Text style={styles.currentTemp}>{weather.currentTemp}°C</Text>
-            <Text style={styles.currentCondition}>{weather.currentCondition}</Text>
-          </View>
-          
-          <Text style={styles.hourlyTitle}>Hourly Forecast</Text>
-          
           <ScrollView 
             horizontal 
             showsHorizontalScrollIndicator={false}
