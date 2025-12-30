@@ -301,6 +301,123 @@ const categorizeWalk = (durationCategory?: string[], name?: string): WalkType =>
   return 'day-walk';
 };
 
+// Calculate string similarity (0-1, where 1 is identical)
+const stringSimilarity = (str1: string, str2: string): number => {
+  const s1 = str1.toLowerCase().trim();
+  const s2 = str2.toLowerCase().trim();
+
+  if (s1 === s2) return 1;
+
+  // Simple word-based matching
+  const words1 = s1.split(/\s+/);
+  const words2 = s2.split(/\s+/);
+
+  let matchCount = 0;
+  for (const word1 of words1) {
+    for (const word2 of words2) {
+      if (word1 === word2 || word1.includes(word2) || word2.includes(word1)) {
+        matchCount++;
+        break;
+      }
+    }
+  }
+
+  return matchCount / Math.max(words1.length, words2.length);
+};
+
+// Score a Google Places result for how well it matches a DOC track
+const scoreMatch = (result: any, trackName: string, trackLat: number, trackLng: number): number => {
+  let score = 0;
+
+  // 1. Name similarity (0-40 points)
+  const nameSimilarity = stringSimilarity(trackName, result.name);
+  score += nameSimilarity * 40;
+
+  // 2. Location proximity (0-25 points)
+  const distance = calculateDistance(
+    trackLat,
+    trackLng,
+    result.geometry.location.lat,
+    result.geometry.location.lng
+  );
+  if (distance < 1) score += 25;
+  else if (distance < 5) score += 18;
+  else if (distance < 10) score += 10;
+  else if (distance < 20) score += 5;
+
+  // 3. Relevant types (0-10 points)
+  const relevantTypes = ['tourist_attraction', 'natural_feature', 'park', 'point_of_interest'];
+  const hasRelevantType = result.types?.some((t: string) => relevantTypes.includes(t));
+  if (hasRelevantType) score += 10;
+
+  // 4. Has star rating (0-15 points) - IMPORTANT: prefer places with ratings
+  if (result.rating) {
+    score += 15;
+  }
+
+  // 5. Rating count (0-10 points) - more reviews = more likely to be correct
+  if (result.user_ratings_total) {
+    if (result.user_ratings_total > 100) score += 10;
+    else if (result.user_ratings_total > 50) score += 7;
+    else if (result.user_ratings_total > 20) score += 5;
+    else if (result.user_ratings_total > 5) score += 3;
+  }
+
+  return score;
+};
+
+// Search Google Places for a track name to get ratings (with fuzzy matching)
+const searchGooglePlacesForTrack = async (trackName: string, lat: number, lng: number): Promise<{ rating?: number; userRatingsTotal?: number } | null> => {
+  if (!GOOGLE_PLACES_API_KEY) return null;
+
+  try {
+    // Use Text Search to find the track
+    const params = new URLSearchParams({
+      query: trackName,
+      location: `${lat},${lng}`,
+      radius: '10000', // 10km radius for fuzzy matching
+      key: GOOGLE_PLACES_API_KEY,
+    });
+
+    const url = `https://maps.googleapis.com/maps/api/place/textsearch/json?${params.toString()}`;
+    const response = await fetch(url);
+    const data = await response.json();
+
+    if (data.status === 'OK' && data.results && data.results.length > 0) {
+      // Score all results and pick the best match
+      let bestMatch = null;
+      let bestScore = 0;
+
+      for (const result of data.results) {
+        const score = scoreMatch(result, trackName, lat, lng);
+
+        // Consider all results, not just ones with ratings
+        // (having a rating adds bonus points in scoreMatch)
+        if (score > bestScore) {
+          bestScore = score;
+          bestMatch = result;
+        }
+      }
+
+      // Only return if we have a confident match with a rating (score > 40)
+      if (bestMatch && bestScore > 40 && bestMatch.rating) {
+        console.log(`✅ Matched "${trackName}" to "${bestMatch.name}" (score: ${bestScore.toFixed(1)}, rating: ${bestMatch.rating}⭐)`);
+        return {
+          rating: bestMatch.rating,
+          userRatingsTotal: bestMatch.user_ratings_total
+        };
+      } else if (bestMatch) {
+        console.log(`❌ No confident match for "${trackName}" - best: "${bestMatch.name}" (score: ${bestScore.toFixed(1)}, has rating: ${!!bestMatch.rating})`);
+      }
+    }
+
+    return null;
+  } catch (error) {
+    console.error('Error searching Google Places for track:', error);
+    return null;
+  }
+};
+
 // Fetch DOC track details
 const fetchDOCTrackDetail = async (assetId: string): Promise<DOCTrack | null> => {
   if (!DOC_API_KEY) return null;
@@ -422,24 +539,55 @@ const fetchNearbyPlaces = async (
       // Limit to top 20 before fetching details (performance optimization)
       const top20 = nearbyPlaces.slice(0, 20);
 
-      // Now fetch details (with photos, DOC link, distance, and duration) for only the nearby tracks
+      // Fetch details and ratings in parallel but don't block on ratings
       const detailPromises = top20.map(async (place) => {
+        // Fetch DOC details (required)
         const detail = await fetchDOCTrackDetail(place.place_id);
+
+        // Fetch Google ratings (optional, non-blocking)
+        const ratingsPromise = searchGooglePlacesForTrack(
+          place.name,
+          place.geometry.location.lat,
+          place.geometry.location.lng
+        );
+
+        let updatedPlace = { ...place };
+
         if (detail) {
-          return {
-            ...place,
+          updatedPlace = {
+            ...updatedPlace,
             photos: detail.introductionThumbnail ? [{ photo_reference: detail.introductionThumbnail }] : place.photos,
             docLink: detail.staticLink,
             trackDistance: detail.distance,
             walkDuration: detail.walkDuration
           };
         }
-        return place;
+
+        // Try to get ratings, but don't block if it fails or is slow
+        try {
+          const ratings = await Promise.race([
+            ratingsPromise,
+            new Promise(resolve => setTimeout(() => resolve(null), 2000)) // 2 second timeout
+          ]);
+
+          if (ratings) {
+            updatedPlace = {
+              ...updatedPlace,
+              rating: ratings.rating,
+              user_ratings_total: ratings.userRatingsTotal
+            };
+          }
+        } catch (error) {
+          // Ratings fetch failed, continue without them
+          console.log('Could not fetch ratings for', place.name);
+        }
+
+        return updatedPlace;
       });
 
-      const placesWithPhotos = await Promise.all(detailPromises);
+      const placesWithDetailsAndRatings = await Promise.all(detailPromises);
 
-      return { places: placesWithPhotos };
+      return { places: placesWithDetailsAndRatings };
     } catch (error) {
       console.error('Error fetching DOC tracks:', error);
       return null;
