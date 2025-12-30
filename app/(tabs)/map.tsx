@@ -84,7 +84,6 @@ export default function Map() {
   const [galleryPhotos, setGalleryPhotos] = useState<string[]>([]);
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
   const [savedPOI, setSavedPOI] = useState<SelectedPOI | null>(null);
-  const [selectedMarkerId, setSelectedMarkerId] = useState<string | null>(null);
   const [lineCoordinates, setLineCoordinates] = useState<Array<{latitude: number; longitude: number}>>([]);
   const savedPOIRef = useRef<SelectedPOI | null>(null);
   const slideAnim = useRef(new Animated.Value(300)).current;
@@ -276,6 +275,14 @@ export default function Map() {
   const handlePoiClick = async (event: PoiClickEvent) => {
     const { name, coordinate, placeId } = event.nativeEvent;
 
+    // Draw line from user location to POI
+    if (location) {
+      setLineCoordinates([
+        { latitude: location.coords.latitude, longitude: location.coords.longitude },
+        { latitude: coordinate.latitude, longitude: coordinate.longitude },
+      ]);
+    }
+
     // Set basic info first
     const basicInfo: SelectedPOI = {
       name,
@@ -313,26 +320,32 @@ export default function Map() {
       useNativeDriver: true,
     }).start(() => {
       setSelectedPOI(null);
-      setSelectedMarkerId(null);
+      setLineCoordinates([]);
     });
   };
 
-  const openDirections = () => {
+  const openAppleMaps = () => {
     if (!selectedPOI) return;
 
     const { latitude, longitude, name } = selectedPOI;
     const label = encodeURIComponent(name);
-
-    let url = '';
-    if (Platform.OS === 'ios') {
-      url = `http://maps.apple.com/?daddr=${latitude},${longitude}&q=${label}`;
-    } else {
-      url = `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}&destination_place_id=${selectedPOI.placeId || ''}`;
-    }
+    const url = `http://maps.apple.com/?daddr=${latitude},${longitude}&q=${label}`;
 
     Linking.openURL(url).catch((err) => {
-      Alert.alert('Error', 'Unable to open maps');
-      console.error('Error opening maps:', err);
+      Alert.alert('Error', 'Unable to open Apple Maps');
+      console.error('Error opening Apple Maps:', err);
+    });
+  };
+
+  const openGoogleMaps = () => {
+    if (!selectedPOI) return;
+
+    const { latitude, longitude } = selectedPOI;
+    const url = `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}&destination_place_id=${selectedPOI.placeId || ''}`;
+
+    Linking.openURL(url).catch((err) => {
+      Alert.alert('Error', 'Unable to open Google Maps');
+      console.error('Error opening Google Maps:', err);
     });
   };
 
@@ -377,52 +390,65 @@ export default function Map() {
           />
         ))}
 
+        {/* Connection Line */}
+        {lineCoordinates.length === 2 && (
+          <Polyline
+            coordinates={lineCoordinates}
+            strokeColor="#007AFF"
+            strokeWidth={3}
+            lineDashPattern={[10, 10]}
+            lineCap="round"
+            lineJoin="round"
+          />
+        )}
+
         {/* Journal Entry Markers */}
-        {journalMarkers.map((entry) => {
-          const isSelected = selectedMarkerId === `journal-${entry.id}`;
-          return (
-            <Marker
-              key={entry.id}
-              coordinate={entry.coordinates!}
-              tracksViewChanges={false}
-              onPress={() => {
-                console.log('Journal marker pressed:', entry.title);
-                setSelectedMarkerId(`journal-${entry.id}`);
-                const distanceData = calculateDistanceAndDuration(
-                  entry.coordinates!.latitude,
-                  entry.coordinates!.longitude
-                );
+        {journalMarkers.map((entry) => (
+          <Marker
+            key={entry.id}
+            coordinate={entry.coordinates!}
+            onPress={() => {
+              console.log('Journal marker pressed:', entry.title);
 
-                setSelectedPOI({
-                  name: entry.title,
-                  latitude: entry.coordinates!.latitude,
-                  longitude: entry.coordinates!.longitude,
-                  distance: distanceData?.distance,
-                  duration: distanceData?.duration,
-                  type: 'journal',
-                  journalEntry: entry,
-                  photos: entry.photos,
-                  formattedAddress: entry.location,
-                });
+              // Draw line from user location to journal marker
+              if (location) {
+                setLineCoordinates([
+                  { latitude: location.coords.latitude, longitude: location.coords.longitude },
+                  { latitude: entry.coordinates!.latitude, longitude: entry.coordinates!.longitude },
+                ]);
+              }
 
-                Animated.spring(slideAnim, {
-                  toValue: 0,
-                  useNativeDriver: true,
-                  damping: 15,
-                  stiffness: 150,
-                  mass: 0.8,
-                }).start();
-              }}
-            >
-              <View style={[
-                styles.journalMarker,
-                isSelected && styles.journalMarkerSelected
-              ]}>
-                <Ionicons name="book" size={isSelected ? 24 : 20} color="#fff" />
-              </View>
-            </Marker>
-          );
-        })}
+              const distanceData = calculateDistanceAndDuration(
+                entry.coordinates!.latitude,
+                entry.coordinates!.longitude
+              );
+
+              setSelectedPOI({
+                name: entry.title,
+                latitude: entry.coordinates!.latitude,
+                longitude: entry.coordinates!.longitude,
+                distance: distanceData?.distance,
+                duration: distanceData?.duration,
+                type: 'journal',
+                journalEntry: entry,
+                photos: entry.photos,
+                formattedAddress: entry.location,
+              });
+
+              Animated.spring(slideAnim, {
+                toValue: 0,
+                useNativeDriver: true,
+                damping: 15,
+                stiffness: 150,
+                mass: 0.8,
+              }).start();
+            }}
+          >
+            <View style={styles.journalMarker}>
+              <Ionicons name="book" size={20} color="#fff" />
+            </View>
+          </Marker>
+        ))}
       </MapView>
 
       {/* POI Details Modal */}
@@ -585,28 +611,56 @@ export default function Map() {
                         <Text style={styles.directionsButtonText}>View Full Entry</Text>
                       </View>
                     </TouchableOpacity>
+                    <View style={styles.directionButtonsRow}>
+                      <TouchableOpacity
+                        style={[styles.directionsButton, styles.secondaryButton, styles.halfButton]}
+                        onPress={openAppleMaps}
+                      >
+                        <View style={styles.directionsButtonContent}>
+                          <Ionicons name="map-outline" size={20} color="#007AFF" />
+                          <Text style={[styles.directionsButtonText, styles.secondaryButtonText, styles.smallButtonText]}>
+                            Apple Maps
+                          </Text>
+                        </View>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[styles.directionsButton, styles.secondaryButton, styles.halfButton]}
+                        onPress={openGoogleMaps}
+                      >
+                        <View style={styles.directionsButtonContent}>
+                          <Ionicons name="navigate-outline" size={20} color="#007AFF" />
+                          <Text style={[styles.directionsButtonText, styles.secondaryButtonText, styles.smallButtonText]}>
+                            Google Maps
+                          </Text>
+                        </View>
+                      </TouchableOpacity>
+                    </View>
+                  </>
+                ) : (
+                  <View style={styles.directionButtonsRow}>
                     <TouchableOpacity
-                      style={[styles.directionsButton, styles.secondaryButton]}
-                      onPress={openDirections}
+                      style={[styles.directionsButton, styles.halfButton]}
+                      onPress={openAppleMaps}
                     >
                       <View style={styles.directionsButtonContent}>
-                        <Ionicons name="navigate" size={22} color="#007AFF" />
-                        <Text style={[styles.directionsButtonText, styles.secondaryButtonText]}>
-                          Get Directions
+                        <Ionicons name="map-outline" size={20} color="#fff" />
+                        <Text style={[styles.directionsButtonText, styles.smallButtonText]}>
+                          Apple Maps
                         </Text>
                       </View>
                     </TouchableOpacity>
-                  </>
-                ) : (
-                  <TouchableOpacity
-                    style={styles.directionsButton}
-                    onPress={openDirections}
-                  >
-                    <View style={styles.directionsButtonContent}>
-                      <Ionicons name="navigate" size={22} color="#fff" />
-                      <Text style={styles.directionsButtonText}>Get Directions</Text>
-                    </View>
-                  </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.directionsButton, styles.halfButton]}
+                      onPress={openGoogleMaps}
+                    >
+                      <View style={styles.directionsButtonContent}>
+                        <Ionicons name="navigate-outline" size={20} color="#fff" />
+                        <Text style={[styles.directionsButtonText, styles.smallButtonText]}>
+                          Google Maps
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                  </View>
                 )}</View>
             </View>
           </Animated.View>
@@ -709,18 +763,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 4,
     elevation: 5,
-  },
-  journalMarkerSelected: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    borderWidth: 4,
-    shadowColor: '#10b981',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.6,
-    shadowRadius: 12,
-    elevation: 10,
-    transform: [{ scale: 1.1 }],
   },
   calloutContainer: {
     minWidth: 200,
@@ -957,6 +999,16 @@ const styles = StyleSheet.create({
   },
   modalButtons: {
     gap: 12,
+  },
+  directionButtonsRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  halfButton: {
+    flex: 1,
+  },
+  smallButtonText: {
+    fontSize: 15,
   },
   viewEntryButton: {
     backgroundColor: '#10b981',
