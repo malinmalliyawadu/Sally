@@ -34,7 +34,12 @@
         "ACCESS_FINE_LOCATION",
         "READ_MEDIA_IMAGES",
         "CAMERA"
-      ]
+      ],
+      "config": {
+        "googleMaps": {
+          "apiKey": "YOUR_GOOGLE_MAPS_API_KEY"
+        }
+      }
     },
     "web": {
       "favicon": "./assets/favicon.png"
