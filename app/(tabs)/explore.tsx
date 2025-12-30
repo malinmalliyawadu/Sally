@@ -24,6 +24,9 @@ interface Place {
   distance: number;
   icon: keyof typeof Ionicons.glyphMap;
   category: Category;
+  docLink?: string;  // DOC website URL for hiking trails
+  trackDistance?: string;  // Track length (e.g., "3.1 km one way")
+  walkDuration?: string;  // Walk duration (e.g., "2 hr 30 min one way")
 }
 
 interface CacheEntry {
@@ -33,9 +36,28 @@ interface CacheEntry {
   nextPageToken?: string;
 }
 
+interface DOCTrack {
+  assetId: string;
+  name: string;
+  introduction?: string;
+  introductionThumbnail?: string;
+  distance?: string;
+  walkDuration?: string;
+  walkDurationCategory?: string[];
+  walkTrackCategory?: string[];
+  region?: string[];
+  staticLink?: string;
+  x: number;
+  y: number;
+}
+
+type WalkType = 'great-walk' | 'day-walk' | 'short-walk';
+
 // API configuration
 const GOOGLE_PLACES_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_PLACES_API_KEY || '';
 const PLACES_API_BASE = 'https://maps.googleapis.com/maps/api/place/nearbysearch/json';
+const DOC_API_KEY = process.env.EXPO_PUBLIC_DOC_API_KEY || '';
+const DOC_API_BASE = 'https://api.doc.govt.nz/v1';
 
 // Category to Google Places type mapping
 const CATEGORY_TYPE_MAPPING: Record<Category, string[] | null> = {
@@ -183,6 +205,27 @@ const setCachedPlaces = (
   });
 };
 
+// Convert NZTM (x, y) coordinates to WGS84 (lat, lng)
+// Simplified conversion for New Zealand
+const nztmToWGS84 = (x: number, y: number): { lat: number; lng: number } => {
+  // NZTM parameters
+  const falseEasting = 1600000;
+  const falseNorthing = 10000000;
+  const centralMeridian = 173;
+  const latitudeOfOrigin = 0;
+  const scaleFactor = 0.9996;
+
+  // Remove false coordinates
+  const easting = x - falseEasting;
+  const northing = y - falseNorthing;
+
+  // Simplified inverse projection (accurate enough for NZ)
+  const lat = latitudeOfOrigin + (northing / (111320 * scaleFactor));
+  const lng = centralMeridian + (easting / (111320 * Math.cos(lat * Math.PI / 180) * scaleFactor));
+
+  return { lat, lng };
+};
+
 // Get photo URL from photo reference
 const getPhotoUrl = (photoReference: string, maxWidth: number = 400): string => {
   return `https://maps.googleapis.com/maps/api/place/photo?maxwidth=${maxWidth}&photoreference=${photoReference}&key=${GOOGLE_PLACES_API_KEY}`;
@@ -190,34 +233,157 @@ const getPhotoUrl = (photoReference: string, maxWidth: number = 400): string => 
 
 // Open place in external maps app
 const openInMaps = (place: Place) => {
+  const buttons: any[] = [
+    {
+      text: 'Apple Maps',
+      onPress: () => {
+        const url = `maps://maps.apple.com/?q=${encodeURIComponent(place.name)}&ll=${place.geometry.location.lat},${place.geometry.location.lng}`;
+        Linking.openURL(url).catch(() => {
+          Alert.alert('Error', 'Unable to open Apple Maps');
+        });
+      },
+    },
+    {
+      text: 'Google Maps',
+      onPress: () => {
+        const url = `https://www.google.com/maps/search/?api=1&query=${place.geometry.location.lat},${place.geometry.location.lng}&query_place_id=${place.place_id}`;
+        Linking.openURL(url).catch(() => {
+          Alert.alert('Error', 'Unable to open Google Maps');
+        });
+      },
+    },
+  ];
+
+  // Add DOC website option for hiking trails
+  if (place.docLink) {
+    buttons.push({
+      text: 'View on DOC Website',
+      onPress: () => {
+        Linking.openURL(place.docLink!).catch(() => {
+          Alert.alert('Error', 'Unable to open DOC website');
+        });
+      },
+    });
+  }
+
+  buttons.push({
+    text: 'Cancel',
+    style: 'cancel',
+  });
+
   Alert.alert(
-    'Open in Maps',
-    `Navigate to ${place.name}?`,
-    [
-      {
-        text: 'Apple Maps',
-        onPress: () => {
-          const url = `maps://maps.apple.com/?q=${encodeURIComponent(place.name)}&ll=${place.geometry.location.lat},${place.geometry.location.lng}`;
-          Linking.openURL(url).catch(() => {
-            Alert.alert('Error', 'Unable to open Apple Maps');
-          });
-        },
-      },
-      {
-        text: 'Google Maps',
-        onPress: () => {
-          const url = `https://www.google.com/maps/search/?api=1&query=${place.geometry.location.lat},${place.geometry.location.lng}&query_place_id=${place.place_id}`;
-          Linking.openURL(url).catch(() => {
-            Alert.alert('Error', 'Unable to open Google Maps');
-          });
-        },
-      },
-      {
-        text: 'Cancel',
-        style: 'cancel',
-      },
-    ]
+    place.docLink ? 'Options' : 'Open in Maps',
+    place.docLink ? `${place.name}` : `Navigate to ${place.name}?`,
+    buttons
   );
+};
+
+// Categorize walk by duration
+const categorizeWalk = (durationCategory?: string[], name?: string): WalkType => {
+  const greatWalks = [
+    'Milford Track', 'Routeburn Track', 'Kepler Track', 'Abel Tasman Coast Track',
+    'Heaphy Track', 'Tongariro Northern Circuit', 'Whanganui Journey',
+    'Lake Waikaremoana Track', 'Rakiura Track', 'Paparoa Track'
+  ];
+
+  if (name && greatWalks.some(gw => name.includes(gw))) {
+    return 'great-walk';
+  }
+
+  if (!durationCategory || durationCategory.length === 0) {
+    return 'short-walk';
+  }
+
+  const category = durationCategory[0];
+  if (category.includes('1 hour') || category.includes('Under 1 hour')) {
+    return 'short-walk';
+  }
+  return 'day-walk';
+};
+
+// Fetch DOC track details
+const fetchDOCTrackDetail = async (assetId: string): Promise<DOCTrack | null> => {
+  if (!DOC_API_KEY) return null;
+
+  try {
+    const response = await fetch(`${DOC_API_BASE}/tracks/${assetId}/detail`, {
+      headers: {
+        'x-api-key': DOC_API_KEY
+      }
+    });
+
+    if (!response.ok) {
+      console.error('DOC API detail error:', response.status);
+      return null;
+    }
+
+    const detail = await response.json();
+    return detail;
+  } catch (error) {
+    console.error('Error fetching DOC track detail:', error);
+    return null;
+  }
+};
+
+// Fetch DOC tracks
+const fetchDOCTracks = async (): Promise<DOCTrack[]> => {
+  if (!DOC_API_KEY) {
+    console.error('DOC API key not configured');
+    return [];
+  }
+
+  try {
+    const response = await fetch(`${DOC_API_BASE}/tracks`, {
+      headers: {
+        'x-api-key': DOC_API_KEY
+      }
+    });
+
+    if (!response.ok) {
+      console.error('DOC API error:', response.status);
+      return [];
+    }
+
+    const tracks = await response.json();
+    return tracks;
+  } catch (error) {
+    console.error('Error fetching DOC tracks:', error);
+    return [];
+  }
+};
+
+// Convert DOC track to Place object
+const docTrackToPlace = async (track: DOCTrack, userLat: number, userLng: number): Promise<Place | null> => {
+  try {
+    const { lat, lng } = nztmToWGS84(track.x, track.y);
+    const distance = calculateDistance(userLat, userLng, lat, lng);
+
+    const walkType = categorizeWalk(track.walkDurationCategory, track.name);
+
+    return {
+      place_id: track.assetId,
+      name: track.name,
+      types: ['hiking_trail', walkType],
+      vicinity: track.region?.join(', '),
+      rating: undefined, // Will be filled by Google Places cross-reference
+      user_ratings_total: undefined,
+      geometry: {
+        location: {
+          lat,
+          lng
+        }
+      },
+      photos: track.introductionThumbnail ? [{ photo_reference: track.introductionThumbnail }] : undefined,
+      opening_hours: undefined,
+      distance,
+      icon: walkType === 'great-walk' ? 'trophy-outline' :
+            walkType === 'day-walk' ? 'trail-sign-outline' : 'walk-outline',
+      category: 'hiking'
+    };
+  } catch (error) {
+    console.error('Error converting DOC track:', error);
+    return null;
+  }
 };
 
 // API fetch function
@@ -229,6 +395,58 @@ const fetchNearbyPlaces = async (
   pageToken?: string
 ): Promise<{ places: Place[], nextPageToken?: string } | null> => {
 
+  // Special handling for hiking category - use DOC tracks
+  if (category === 'hiking') {
+    try {
+      const docTracks = await fetchDOCTracks();
+
+      // First, convert basic tracks to calculate distances
+      const placesPromises = docTracks.map(track => docTrackToPlace(track, latitude, longitude));
+      const allPlaces = (await Promise.all(placesPromises)).filter((p): p is Place => p !== null);
+
+      // Filter by distance (within 50km) first
+      let nearbyPlaces = allPlaces.filter(p => p.distance < 50);
+
+      // Apply search query filter
+      if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase();
+        nearbyPlaces = nearbyPlaces.filter(p =>
+          p.name.toLowerCase().includes(query) ||
+          p.vicinity?.toLowerCase().includes(query)
+        );
+      }
+
+      // Sort by distance
+      nearbyPlaces.sort((a, b) => a.distance - b.distance);
+
+      // Limit to top 20 before fetching details (performance optimization)
+      const top20 = nearbyPlaces.slice(0, 20);
+
+      // Now fetch details (with photos, DOC link, distance, and duration) for only the nearby tracks
+      const detailPromises = top20.map(async (place) => {
+        const detail = await fetchDOCTrackDetail(place.place_id);
+        if (detail) {
+          return {
+            ...place,
+            photos: detail.introductionThumbnail ? [{ photo_reference: detail.introductionThumbnail }] : place.photos,
+            docLink: detail.staticLink,
+            trackDistance: detail.distance,
+            walkDuration: detail.walkDuration
+          };
+        }
+        return place;
+      });
+
+      const placesWithPhotos = await Promise.all(detailPromises);
+
+      return { places: placesWithPhotos };
+    } catch (error) {
+      console.error('Error fetching DOC tracks:', error);
+      return null;
+    }
+  }
+
+  // For all other categories, use Google Places API
   if (!GOOGLE_PLACES_API_KEY) {
     console.error('Google Places API key not configured');
     return null;
@@ -502,7 +720,11 @@ export default function Explore() {
                   {/* Place Photo */}
                   {place.photos && place.photos.length > 0 && (
                     <Image
-                      source={{ uri: getPhotoUrl(place.photos[0].photo_reference) }}
+                      source={{
+                        uri: place.photos[0].photo_reference.startsWith('http')
+                          ? place.photos[0].photo_reference  // DOC direct URL
+                          : getPhotoUrl(place.photos[0].photo_reference)  // Google photo reference
+                      }}
                       style={styles.placeImage}
                       resizeMode="cover"
                     />
@@ -513,7 +735,25 @@ export default function Explore() {
                       <Ionicons name={place.icon} size={24} color="#007AFF" />
                     </View>
                     <View style={styles.placeInfo}>
-                      <Text style={styles.placeName}>{place.name}</Text>
+                      <View style={styles.placeHeader}>
+                        <Text style={styles.placeName}>{place.name}</Text>
+                        {/* Walk Type Badge */}
+                        {place.types.includes('great-walk') && (
+                          <View style={[styles.walkTypeBadge, styles.greatWalkBadge]}>
+                            <Text style={styles.walkTypeBadgeText}>Great Walk</Text>
+                          </View>
+                        )}
+                        {place.types.includes('day-walk') && (
+                          <View style={[styles.walkTypeBadge, styles.dayWalkBadge]}>
+                            <Text style={styles.walkTypeBadgeText}>Day Walk</Text>
+                          </View>
+                        )}
+                        {place.types.includes('short-walk') && (
+                          <View style={[styles.walkTypeBadge, styles.shortWalkBadge]}>
+                            <Text style={styles.walkTypeBadgeText}>Short Walk</Text>
+                          </View>
+                        )}
+                      </View>
 
                       {/* Rating */}
                       {place.rating && (
@@ -546,6 +786,24 @@ export default function Explore() {
                       <Text style={styles.placeDescription} numberOfLines={1}>
                         {place.vicinity}
                       </Text>
+
+                      {/* Track Distance & Duration (for hiking trails) */}
+                      {(place.trackDistance || place.walkDuration) && (
+                        <View style={styles.trackInfoContainer}>
+                          {place.trackDistance && (
+                            <View style={styles.trackInfoItem}>
+                              <Ionicons name="resize-outline" size={14} color="#6b7280" />
+                              <Text style={styles.trackInfoText}>{place.trackDistance}</Text>
+                            </View>
+                          )}
+                          {place.walkDuration && (
+                            <View style={styles.trackInfoItem}>
+                              <Ionicons name="time-outline" size={14} color="#6b7280" />
+                              <Text style={styles.trackInfoText}>{place.walkDuration}</Text>
+                            </View>
+                          )}
+                        </View>
+                      )}
 
                       <View style={styles.placeFooter}>
                         <Ionicons name="navigate-outline" size={14} color="#9ca3af" />
@@ -700,16 +958,58 @@ const styles = StyleSheet.create({
   placeInfo: {
     flex: 1,
   },
+  placeHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 4,
+    flexWrap: 'wrap',
+  },
   placeName: {
     fontSize: 17,
     fontWeight: '600',
     color: '#1a1a1a',
-    marginBottom: 4,
+  },
+  walkTypeBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  greatWalkBadge: {
+    backgroundColor: '#FFD700',
+  },
+  dayWalkBadge: {
+    backgroundColor: '#007AFF',
+  },
+  shortWalkBadge: {
+    backgroundColor: '#10b981',
+  },
+  walkTypeBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#ffffff',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   placeDescription: {
     fontSize: 14,
     color: '#6b7280',
     marginBottom: 6,
+  },
+  trackInfoContainer: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 6,
+  },
+  trackInfoItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  trackInfoText: {
+    fontSize: 13,
+    color: '#6b7280',
+    fontWeight: '500',
   },
   placeFooter: {
     flexDirection: 'row',
