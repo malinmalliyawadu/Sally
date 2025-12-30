@@ -1,7 +1,25 @@
 import { useState, useEffect } from 'react';
-import { View, StyleSheet, Alert } from 'react-native';
-import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import { View, StyleSheet, Alert, TouchableOpacity, Text } from 'react-native';
+import MapView, { Marker, Callout, PROVIDER_GOOGLE } from 'react-native-maps';
 import * as Location from 'expo-location';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import Ionicons from '@expo/vector-icons/Ionicons';
+import { router } from 'expo-router';
+
+interface JournalEntry {
+  id: string;
+  title: string;
+  content: string;
+  location: string;
+  coordinates?: { latitude: number; longitude: number };
+  date: string;
+  timestamp: number;
+  photos: string[];
+  distanceTraveled?: number;
+  placesVisited?: string[];
+}
+
+const STORAGE_KEY = '@sally_journal_entries';
 
 // Sample data - replace with real data later
 const SAMPLE_POIS = [
@@ -40,8 +58,10 @@ const SAMPLE_CAMPING = [
 
 export default function Map() {
   const [location, setLocation] = useState<Location.LocationObject | null>(null);
+  const [journalEntries, setJournalEntries] = useState<JournalEntry[]>([]);
 
   useEffect(() => {
+    loadJournalEntries();
     (async () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
@@ -56,6 +76,20 @@ export default function Map() {
       setLocation(currentLocation);
     })();
   }, []);
+
+  const loadJournalEntries = async () => {
+    try {
+      const stored = await AsyncStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        setJournalEntries(JSON.parse(stored));
+      }
+    } catch (error) {
+      console.error('Error loading journal entries:', error);
+    }
+  };
+
+  // Filter journal entries that have coordinates
+  const journalMarkers = journalEntries.filter(entry => entry.coordinates);
 
   return (
     <View style={styles.container}>
@@ -92,6 +126,40 @@ export default function Map() {
             pinColor="green"
           />
         ))}
+
+        {/* Journal Entry Markers */}
+        {journalMarkers.map((entry) => (
+          <Marker
+            key={entry.id}
+            coordinate={entry.coordinates!}
+          >
+            <TouchableOpacity
+              onPress={() => {
+                // Navigate to journal tab with entry ID
+                router.push(`/journal?entryId=${entry.id}`);
+              }}
+            >
+              <View style={styles.journalMarker}>
+                <Ionicons name="book" size={20} color="#fff" />
+              </View>
+            </TouchableOpacity>
+            <Callout
+              onPress={() => {
+                router.push(`/journal?entryId=${entry.id}`);
+              }}
+            >
+              <View style={styles.calloutContainer}>
+                <Text style={styles.calloutTitle}>{entry.title}</Text>
+                <Text style={styles.calloutSubtitle}>{entry.date}</Text>
+                <Text style={styles.calloutLocation}>{entry.location}</Text>
+                <View style={styles.calloutButton}>
+                  <Ionicons name="arrow-forward" size={16} color="#007AFF" />
+                  <Text style={styles.calloutButtonText}>View Entry</Text>
+                </View>
+              </View>
+            </Callout>
+          </Marker>
+        ))}
       </MapView>
     </View>
   );
@@ -104,5 +172,53 @@ const styles = StyleSheet.create({
   map: {
     width: '100%',
     height: '100%',
+  },
+  journalMarker: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#10b981',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 3,
+    borderColor: '#ffffff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  calloutContainer: {
+    minWidth: 200,
+    padding: 12,
+  },
+  calloutTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1a1a1a',
+    marginBottom: 4,
+  },
+  calloutSubtitle: {
+    fontSize: 13,
+    color: '#6b7280',
+    marginBottom: 2,
+  },
+  calloutLocation: {
+    fontSize: 13,
+    color: '#9ca3af',
+    marginBottom: 8,
+  },
+  calloutButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#e5e7eb',
+  },
+  calloutButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#007AFF',
   },
 });

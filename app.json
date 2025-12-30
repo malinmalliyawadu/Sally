@@ -16,7 +16,9 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.anonymous.sally",
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "Sally needs access to your location to show nearby points of interest and freedom camping areas."
+        "NSLocationWhenInUseUsageDescription": "Sally needs access to your location to show nearby points of interest and freedom camping areas.",
+        "NSPhotoLibraryUsageDescription": "Sally needs access to your photos to suggest images for your journal entries.",
+        "NSCameraUsageDescription": "Sally needs access to your camera to take photos for your journal."
       }
     },
     "android": {
@@ -29,7 +31,9 @@
       "predictiveBackGestureEnabled": false,
       "permissions": [
         "ACCESS_COARSE_LOCATION",
-        "ACCESS_FINE_LOCATION"
+        "ACCESS_FINE_LOCATION",
+        "READ_MEDIA_IMAGES",
+        "CAMERA"
       ]
     },
     "web": {

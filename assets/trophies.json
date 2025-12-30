@@ -1,0 +1,197 @@
+[
+  {
+    "id": "first_steps",
+    "name": "First Steps",
+    "description": "Start your van life journey",
+    "icon": "footsteps-outline",
+    "category": "beginner",
+    "rule": {
+      "type": "visit_any",
+      "count": 1
+    }
+  },
+  {
+    "id": "explorer",
+    "name": "Explorer",
+    "description": "Visit 5 different locations",
+    "icon": "compass-outline",
+    "category": "exploration",
+    "rule": {
+      "type": "visit_count",
+      "count": 5
+    }
+  },
+  {
+    "id": "road_warrior",
+    "name": "Road Warrior",
+    "description": "Travel 100km in a single day",
+    "icon": "car-sport-outline",
+    "category": "distance",
+    "rule": {
+      "type": "daily_distance",
+      "distance": 100
+    }
+  },
+  {
+    "id": "milford_sound",
+    "name": "Milford Sound Explorer",
+    "description": "Visit the stunning Milford Sound",
+    "icon": "water-outline",
+    "category": "landmark",
+    "rule": {
+      "type": "visit_location",
+      "location": "Milford Sound",
+      "coordinates": {
+        "latitude": -44.6717,
+        "longitude": 167.9261,
+        "radius": 5000
+      }
+    }
+  },
+  {
+    "id": "mount_cook",
+    "name": "Mountain Climber",
+    "description": "Reach Mount Cook/Aoraki",
+    "icon": "mountain-outline",
+    "category": "landmark",
+    "rule": {
+      "type": "visit_location",
+      "location": "Mount Cook",
+      "coordinates": {
+        "latitude": -43.5950,
+        "longitude": 170.1418,
+        "radius": 10000
+      }
+    }
+  },
+  {
+    "id": "tekapo",
+    "name": "Stargazer",
+    "description": "Visit Lake Tekapo, home of dark sky reserve",
+    "icon": "moon-outline",
+    "category": "landmark",
+    "rule": {
+      "type": "visit_location",
+      "location": "Lake Tekapo",
+      "coordinates": {
+        "latitude": -44.0045,
+        "longitude": 170.4776,
+        "radius": 5000
+      }
+    }
+  },
+  {
+    "id": "tongariro",
+    "name": "Alpine Adventurer",
+    "description": "Conquer Tongariro Alpine Crossing",
+    "icon": "trail-sign-outline",
+    "category": "landmark",
+    "rule": {
+      "type": "visit_location",
+      "location": "Tongariro",
+      "coordinates": {
+        "latitude": -39.1333,
+        "longitude": 175.5833,
+        "radius": 8000
+      }
+    }
+  },
+  {
+    "id": "freedom_camper",
+    "name": "Freedom Camper",
+    "description": "Stay at a freedom camping spot",
+    "icon": "bonfire-outline",
+    "category": "camping",
+    "rule": {
+      "type": "visit_poi_type",
+      "poiType": "camping"
+    }
+  },
+  {
+    "id": "weekend_warrior",
+    "name": "Weekend Warrior",
+    "description": "Journal 3 entries in a weekend",
+    "icon": "calendar-outline",
+    "category": "journaling",
+    "rule": {
+      "type": "weekend_journals",
+      "count": 3
+    }
+  },
+  {
+    "id": "photographer",
+    "name": "Photographer",
+    "description": "Add 10 photos to your journal entries",
+    "icon": "camera-outline",
+    "category": "journaling",
+    "rule": {
+      "type": "total_photos",
+      "count": 10
+    }
+  },
+  {
+    "id": "north_island",
+    "name": "North Island Explorer",
+    "description": "Visit 10 locations in the North Island",
+    "icon": "map-outline",
+    "category": "exploration",
+    "rule": {
+      "type": "visit_region",
+      "region": "North Island",
+      "count": 10,
+      "coordinates": {
+        "latitude": -38.0,
+        "longitude": 176.0
+      }
+    }
+  },
+  {
+    "id": "south_island",
+    "name": "South Island Explorer",
+    "description": "Visit 10 locations in the South Island",
+    "icon": "map-outline",
+    "category": "exploration",
+    "rule": {
+      "type": "visit_region",
+      "region": "South Island",
+      "count": 10,
+      "coordinates": {
+        "latitude": -43.0,
+        "longitude": 171.0
+      }
+    }
+  },
+  {
+    "id": "dedicated_journaler",
+    "name": "Dedicated Journaler",
+    "description": "Create 20 journal entries",
+    "icon": "book-outline",
+    "category": "journaling",
+    "rule": {
+      "type": "total_journals",
+      "count": 20
+    }
+  },
+  {
+    "id": "marathon_driver",
+    "name": "Marathon Driver",
+    "description": "Travel 500km total",
+    "icon": "speedometer-outline",
+    "category": "distance",
+    "rule": {
+      "type": "total_distance",
+      "distance": 500
+    }
+  },
+  {
+    "id": "early_bird",
+    "name": "Early Bird",
+    "description": "Create a journal entry before 7am",
+    "icon": "sunny-outline",
+    "category": "journaling",
+    "rule": {
+      "type": "journal_time",
+      "before": 7
+    }
+  }
+]
