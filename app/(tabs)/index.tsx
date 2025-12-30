@@ -1,17 +1,10 @@
-import React, { useEffect } from 'react';
-import { StyleSheet, View } from 'react-native';
-import Dashboard from '@/components/dashboard/Dashboard';
-import { Colors } from '@/constants/Colors';
+import { View, Text, StyleSheet } from 'react-native';
 
-export default function DashboardScreen() {
-  // Ensure all animations are properly initialized
-  useEffect(() => {
-    // This empty useEffect ensures proper component mounting
-  }, []);
-
+export default function Dashboard() {
   return (
     <View style={styles.container}>
-      <Dashboard />
+      <Text style={styles.title}>Dashboard</Text>
+      <Text style={styles.subtitle}>Welcome to Sally 🚐</Text>
     </View>
   );
 }
@@ -19,6 +12,17 @@ export default function DashboardScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.dark.background,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: '#666',
   },
 });
