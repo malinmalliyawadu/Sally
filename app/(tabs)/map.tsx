@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { View, StyleSheet, Alert, TouchableOpacity, Text, Modal, Linking, Platform, Animated, Image, ScrollView, Dimensions, PanResponder } from 'react-native';
-import MapView, { Marker, Callout, PROVIDER_GOOGLE, PoiClickEvent } from 'react-native-maps';
+import MapView, { Marker, Callout, PROVIDER_GOOGLE, PoiClickEvent, Polyline } from 'react-native-maps';
 import * as Location from 'expo-location';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -72,8 +72,8 @@ interface SelectedPOI {
   journalEntry?: JournalEntry;
 }
 
-// Replace with your Google Places API key
-const GOOGLE_PLACES_API_KEY = 'AIzaSyBGElyLWhuaaPYgY52xSFOrKhf6xWd2Q88';
+// Google Places API key from environment variable
+const GOOGLE_PLACES_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_PLACES_API_KEY || '';
 
 export default function Map() {
   const [location, setLocation] = useState<Location.LocationObject | null>(null);
@@ -84,6 +84,8 @@ export default function Map() {
   const [galleryPhotos, setGalleryPhotos] = useState<string[]>([]);
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
   const [savedPOI, setSavedPOI] = useState<SelectedPOI | null>(null);
+  const [selectedMarkerId, setSelectedMarkerId] = useState<string | null>(null);
+  const [lineCoordinates, setLineCoordinates] = useState<Array<{latitude: number; longitude: number}>>([]);
   const savedPOIRef = useRef<SelectedPOI | null>(null);
   const slideAnim = useRef(new Animated.Value(300)).current;
   const galleryTranslateY = useRef(new Animated.Value(0)).current;
@@ -230,7 +232,7 @@ export default function Map() {
   };
 
   const fetchPlaceDetails = async (placeId: string, lat: number, lng: number) => {
-    if (!placeId || GOOGLE_PLACES_API_KEY === 'YOUR_GOOGLE_PLACES_API_KEY') {
+    if (!placeId || !GOOGLE_PLACES_API_KEY) {
       console.log('Google Places API key not configured');
       return null;
     }
@@ -311,6 +313,7 @@ export default function Map() {
       useNativeDriver: true,
     }).start(() => {
       setSelectedPOI(null);
+      setSelectedMarkerId(null);
     });
   };
 
@@ -375,43 +378,51 @@ export default function Map() {
         ))}
 
         {/* Journal Entry Markers */}
-        {journalMarkers.map((entry) => (
-          <Marker
-            key={entry.id}
-            coordinate={entry.coordinates!}
-            onPress={() => {
-              console.log('Journal marker pressed:', entry.title);
-              const distanceData = calculateDistanceAndDuration(
-                entry.coordinates!.latitude,
-                entry.coordinates!.longitude
-              );
+        {journalMarkers.map((entry) => {
+          const isSelected = selectedMarkerId === `journal-${entry.id}`;
+          return (
+            <Marker
+              key={entry.id}
+              coordinate={entry.coordinates!}
+              tracksViewChanges={false}
+              onPress={() => {
+                console.log('Journal marker pressed:', entry.title);
+                setSelectedMarkerId(`journal-${entry.id}`);
+                const distanceData = calculateDistanceAndDuration(
+                  entry.coordinates!.latitude,
+                  entry.coordinates!.longitude
+                );
 
-              setSelectedPOI({
-                name: entry.title,
-                latitude: entry.coordinates!.latitude,
-                longitude: entry.coordinates!.longitude,
-                distance: distanceData?.distance,
-                duration: distanceData?.duration,
-                type: 'journal',
-                journalEntry: entry,
-                photos: entry.photos,
-                formattedAddress: entry.location,
-              });
+                setSelectedPOI({
+                  name: entry.title,
+                  latitude: entry.coordinates!.latitude,
+                  longitude: entry.coordinates!.longitude,
+                  distance: distanceData?.distance,
+                  duration: distanceData?.duration,
+                  type: 'journal',
+                  journalEntry: entry,
+                  photos: entry.photos,
+                  formattedAddress: entry.location,
+                });
 
-              Animated.spring(slideAnim, {
-                toValue: 0,
-                useNativeDriver: true,
-                damping: 15,
-                stiffness: 150,
-                mass: 0.8,
-              }).start();
-            }}
-          >
-            <View style={styles.journalMarker}>
-              <Ionicons name="book" size={20} color="#fff" />
-            </View>
-          </Marker>
-        ))}
+                Animated.spring(slideAnim, {
+                  toValue: 0,
+                  useNativeDriver: true,
+                  damping: 15,
+                  stiffness: 150,
+                  mass: 0.8,
+                }).start();
+              }}
+            >
+              <View style={[
+                styles.journalMarker,
+                isSelected && styles.journalMarkerSelected
+              ]}>
+                <Ionicons name="book" size={isSelected ? 24 : 20} color="#fff" />
+              </View>
+            </Marker>
+          );
+        })}
       </MapView>
 
       {/* POI Details Modal */}
@@ -698,6 +709,18 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 4,
     elevation: 5,
+  },
+  journalMarkerSelected: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    borderWidth: 4,
+    shadowColor: '#10b981',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.6,
+    shadowRadius: 12,
+    elevation: 10,
+    transform: [{ scale: 1.1 }],
   },
   calloutContainer: {
     minWidth: 200,
