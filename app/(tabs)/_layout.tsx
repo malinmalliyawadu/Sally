@@ -22,6 +22,11 @@ export default function TabLayout() {
         <Icon sf={{ default: 'book', selected: 'book.fill' }} drawable="ic_menu_agenda" />
         <Label>Journal</Label>
       </NativeTabs.Trigger>
+
+      <NativeTabs.Trigger name="trophies">
+        <Icon sf={{ default: 'trophy', selected: 'trophy.fill' }} drawable="ic_menu_sort_by_size" />
+        <Label>Trophies</Label>
+      </NativeTabs.Trigger>
     </NativeTabs>
   );
 }
