@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, Image, Linking, Alert } from 'react-native';
 import * as Location from 'expo-location';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import proj4 from 'proj4';
 
 type Category = 'all' | 'food' | 'fuel' | 'camping' | 'attractions' | 'hiking';
 
@@ -104,6 +105,7 @@ const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 const LOCATION_CHANGE_THRESHOLD_KM = 1;
 
 // Cache storage
+// Note: Clear this cache when coordinate conversion changes
 let placesCache = new Map<string, CacheEntry>();
 
 const CATEGORIES = [
@@ -205,24 +207,15 @@ const setCachedPlaces = (
   });
 };
 
+// Define NZTM (EPSG:2193) projection
+// New Zealand Transverse Mercator 2000
+proj4.defs('EPSG:2193', '+proj=tmerc +lat_0=0 +lon_0=173 +k=0.9996 +x_0=1600000 +y_0=10000000 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs');
+
 // Convert NZTM (x, y) coordinates to WGS84 (lat, lng)
-// Simplified conversion for New Zealand
+// Uses accurate proj4 transformation
 const nztmToWGS84 = (x: number, y: number): { lat: number; lng: number } => {
-  // NZTM parameters
-  const falseEasting = 1600000;
-  const falseNorthing = 10000000;
-  const centralMeridian = 173;
-  const latitudeOfOrigin = 0;
-  const scaleFactor = 0.9996;
-
-  // Remove false coordinates
-  const easting = x - falseEasting;
-  const northing = y - falseNorthing;
-
-  // Simplified inverse projection (accurate enough for NZ)
-  const lat = latitudeOfOrigin + (northing / (111320 * scaleFactor));
-  const lng = centralMeridian + (easting / (111320 * Math.cos(lat * Math.PI / 180) * scaleFactor));
-
+  // Convert from NZTM (EPSG:2193) to WGS84 (EPSG:4326)
+  const [lng, lat] = proj4('EPSG:2193', 'EPSG:4326', [x, y]);
   return { lat, lng };
 };
 
@@ -723,23 +716,118 @@ export default function Explore() {
       setLoading(true);
       setError(null);
 
-      const result = await fetchNearbyPlaces(
-        location.coords.latitude,
-        location.coords.longitude,
-        selectedCategory,
-        debouncedSearchQuery
-      );
+      // Special handling for hiking - progressive rendering
+      if (selectedCategory === 'hiking') {
+        try {
+          // Step 1: Fetch all DOC tracks
+          const docTracks = await fetchDOCTracks();
 
-      if (result) {
-        setPlaces(result.places);
-        setNextPageToken(result.nextPageToken);
-        setCachedPlaces(selectedCategory, debouncedSearchQuery, result.places, location.coords, result.nextPageToken);
+          // Step 2: Convert to basic places (fast, synchronous)
+          const placesPromises = docTracks.map(track => docTrackToPlace(track, location.coords.latitude, location.coords.longitude));
+          const allPlaces = (await Promise.all(placesPromises)).filter((p): p is Place => p !== null);
+
+          // Step 3: Filter and sort
+          let nearbyPlaces = allPlaces.filter(p => p.distance < 50);
+
+          if (debouncedSearchQuery.trim()) {
+            const query = debouncedSearchQuery.toLowerCase();
+            nearbyPlaces = nearbyPlaces.filter(p =>
+              p.name.toLowerCase().includes(query) ||
+              p.vicinity?.toLowerCase().includes(query)
+            );
+          }
+
+          nearbyPlaces.sort((a, b) => a.distance - b.distance);
+          const top20 = nearbyPlaces.slice(0, 20);
+
+          // Step 4: Show basic results immediately (non-blocking)
+          setPlaces(top20);
+          setLoading(false);
+
+          // Step 5: Progressively enhance with details and ratings (background)
+          // This runs async without blocking the UI
+          top20.forEach(async (place, index) => {
+            try {
+              // Fetch DOC details
+              const detail = await fetchDOCTrackDetail(place.place_id);
+
+              // Fetch Google ratings with timeout (non-blocking)
+              const ratingsPromise = searchGooglePlacesForTrack(
+                place.name,
+                place.geometry.location.lat,
+                place.geometry.location.lng
+              );
+
+              let updatedPlace = { ...place };
+
+              if (detail) {
+                updatedPlace = {
+                  ...updatedPlace,
+                  photos: detail.introductionThumbnail ? [{ photo_reference: detail.introductionThumbnail }] : place.photos,
+                  docLink: detail.staticLink,
+                  trackDistance: detail.distance,
+                  walkDuration: detail.walkDuration
+                };
+              }
+
+              // Try to get ratings with 2 second timeout
+              try {
+                const ratings = await Promise.race([
+                  ratingsPromise,
+                  new Promise(resolve => setTimeout(() => resolve(null), 2000))
+                ]);
+
+                if (ratings) {
+                  updatedPlace = {
+                    ...updatedPlace,
+                    rating: ratings.rating,
+                    user_ratings_total: ratings.userRatingsTotal
+                  };
+                }
+              } catch (error) {
+                // Ratings fetch failed, continue without them
+              }
+
+              // Update this specific place in the list
+              setPlaces(currentPlaces => {
+                const newPlaces = [...currentPlaces];
+                newPlaces[index] = updatedPlace;
+                return newPlaces;
+              });
+            } catch (error) {
+              console.error('Error enhancing place:', place.name, error);
+            }
+          });
+
+          // Cache the basic results
+          setCachedPlaces(selectedCategory, debouncedSearchQuery, top20, location.coords);
+
+        } catch (error) {
+          console.error('Error fetching DOC tracks:', error);
+          setError('Failed to load hiking trails. Please check your connection.');
+          setPlaces([]);
+          setLoading(false);
+        }
       } else {
-        setError('Failed to load places. Please check your connection.');
-        setPlaces([]);
-      }
+        // For all other categories, use the original flow
+        const result = await fetchNearbyPlaces(
+          location.coords.latitude,
+          location.coords.longitude,
+          selectedCategory,
+          debouncedSearchQuery
+        );
 
-      setLoading(false);
+        if (result) {
+          setPlaces(result.places);
+          setNextPageToken(result.nextPageToken);
+          setCachedPlaces(selectedCategory, debouncedSearchQuery, result.places, location.coords, result.nextPageToken);
+        } else {
+          setError('Failed to load places. Please check your connection.');
+          setPlaces([]);
+        }
+
+        setLoading(false);
+      }
     };
 
     loadPlaces();
