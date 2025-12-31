@@ -9,6 +9,8 @@ import {
   TextInput,
   Alert,
   Image,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
@@ -36,6 +38,7 @@ const LOCATION_HISTORY_KEY = '@sally_location_history';
 export default function Journal() {
   const params = useLocalSearchParams();
   const scrollViewRef = useRef<ScrollView>(null);
+  const modalScrollViewRef = useRef<ScrollView>(null);
   const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [newTitle, setNewTitle] = useState('');
@@ -383,7 +386,11 @@ export default function Journal() {
         presentationStyle="pageSheet"
         onRequestClose={() => setModalVisible(false)}
       >
-        <View style={styles.modalContainer}>
+        <KeyboardAvoidingView
+          style={styles.modalContainer}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={0}
+        >
           <View style={styles.modalHeader}>
             <TouchableOpacity onPress={() => setModalVisible(false)}>
               <Text style={styles.modalCancel}>Cancel</Text>
@@ -394,7 +401,12 @@ export default function Journal() {
             </TouchableOpacity>
           </View>
 
-          <ScrollView style={styles.modalContent}>
+          <ScrollView
+            ref={modalScrollViewRef}
+            style={styles.modalContent}
+            contentContainerStyle={styles.modalContentContainer}
+            keyboardShouldPersistTaps="handled"
+          >
             <View style={styles.locationInfo}>
               <Ionicons name="location" size={20} color="#007AFF" />
               <Text style={styles.locationText}>{currentLocation}</Text>
@@ -487,12 +499,17 @@ export default function Journal() {
               placeholder="What happened today?..."
               value={newContent}
               onChangeText={setNewContent}
+              onFocus={() => {
+                setTimeout(() => {
+                  modalScrollViewRef.current?.scrollToEnd({ animated: true });
+                }, 100);
+              }}
               multiline
               textAlignVertical="top"
               placeholderTextColor="#9ca3af"
             />
           </ScrollView>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );
@@ -677,7 +694,10 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     flex: 1,
+  },
+  modalContentContainer: {
     padding: 20,
+    paddingBottom: 400,
   },
   locationInfo: {
     flexDirection: 'row',
