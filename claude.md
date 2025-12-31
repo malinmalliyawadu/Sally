@@ -20,6 +20,21 @@ A React Native mobile application built with Expo for van travelers exploring Ne
 - `expo-media-library` - Access to device photo library
 - `expo-blur` - Glass effect for iOS tab bar
 - `@expo/vector-icons` - Ionicons icon set
+- `proj4` - Accurate NZTM to WGS84 coordinate transformation
+
+### Testing
+
+- **Jest** with **ts-jest** preset for TypeScript support
+- Unit tests in `__tests__/` directory
+- Utility functions extracted to `app/(tabs)/explore.utils.ts` for testability
+- **24 test cases** with **95.6% code coverage**
+
+**Run tests:**
+```bash
+npm test              # Run all tests
+npm run test:watch    # Watch mode
+npm run test:coverage # Coverage report
+```
 
 ## Project Structure
 
@@ -32,8 +47,11 @@ A React Native mobile application built with Expo for van travelers exploring Ne
 │       ├── index.tsx                  # Dashboard tab
 │       ├── map.tsx                    # Interactive map tab
 │       ├── explore.tsx                # POI discovery tab
+│       ├── explore.utils.ts           # Testable utility functions (Explore)
 │       ├── journal.tsx                # Journal entries tab
 │       └── trophies.tsx               # Achievement system tab
+├── __tests__/
+│   └── explore.utils.test.ts          # Unit tests for explore utilities
 ├── assets/
 │   ├── trophies.json                  # Trophy definitions
 │   ├── icon.png
@@ -44,6 +62,8 @@ A React Native mobile application built with Expo for van travelers exploring Ne
 ├── .env.example                       # API key template
 ├── app.config.js                      # Expo configuration with env vars
 ├── app.json                           # App metadata
+├── jest.config.js                     # Jest testing configuration
+├── jest.setup.js                      # Jest mocks for Expo modules
 ├── package.json
 └── tsconfig.json
 ```
@@ -81,13 +101,44 @@ A React Native mobile application built with Expo for van travelers exploring Ne
 - Animated slide-up modal with spring animation
 
 ### 3. Explore (`app/(tabs)/explore.tsx`)
-- Search bar for finding places
-- Category filters: All, Food, Fuel, Camping, Attractions, Hiking
-- Place cards showing:
-  - Name, type, rating
-  - Distance from user location
-  - Sorted by proximity
-- Sample data (ready for real POI database integration)
+**Real-time POI discovery with advanced hiking trail integration:**
+
+- **Search & Filters:**
+  - Real-time search bar with debouncing
+  - Category filters: All, Food, Fuel, Camping, Attractions, **Hiking**
+  - Sorted by proximity to user
+
+- **Google Places Integration:**
+  - Live data for restaurants, cafes, fuel, camping
+  - Ratings, reviews, photos, opening hours
+  - 5-minute cache with location-based invalidation
+  - Pagination for large result sets
+
+- **DOC Tracks Integration (Hiking):**
+  - **3000+ NZ Department of Conservation walking tracks**
+  - Accurate NZTM → WGS84 coordinate conversion (proj4)
+  - Track metadata: distance, duration, difficulty
+  - Categorized: Great Walks, Day Walks, Short Walks
+  - **Progressive rendering** - shows basic info immediately, enhances with photos/ratings in background
+  - **Fuzzy matching** to cross-reference with Google Places ratings
+
+- **Smart Rating Matching (`explore.utils.ts`):**
+  - Removes noise words ("Track", "Trail", "Scenic", "Reserve") from search
+  - Heavily weights results with ratings (30 points base + 10 for high ratings + 20 for review count)
+  - Accepts matches with score ≥ 35 (with rating) or ≥ 50 (high confidence)
+  - Example: "Tokatoka Scenic Reserve Track" → searches "Tokatoka hike" → finds "Tokatoka Lookout Track" (4.7⭐)
+
+- **Place Cards Display:**
+  - Photos, name, type badges (Great Walk, Day Walk, Short Walk)
+  - Star ratings + review counts
+  - Track distance & duration (for trails)
+  - Distance from user + "Open Now" status
+  - Tap to open in Apple Maps, Google Maps, or DOC website
+
+**Testable Architecture:**
+- Core utilities extracted to `explore.utils.ts`
+- Functions: `calculateDistance`, `nztmToWGS84`, `stringSimilarity`, `scoreMatch`, `cleanSearchQuery`
+- 24 unit tests with 95.6% coverage
 
 ### 4. Journal (`app/(tabs)/journal.tsx`)
 **Most complex component with:**
