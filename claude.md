@@ -223,13 +223,21 @@ Required API keys in `.env`:
 ```bash
 EXPO_PUBLIC_GOOGLE_PLACES_API_KEY=your_key_here
 EXPO_PUBLIC_GOOGLE_MAPS_API_KEY=your_key_here
+EXPO_PUBLIC_DOC_API_KEY=your_key_here
 ```
 
 **Setup:**
+
+**Google Maps & Places:**
 1. Get keys from: https://console.cloud.google.com/google/maps-apis
-2. Enable: Google Places API, Google Maps SDK for Android, Google Maps SDK for iOS
+2. Enable: Google Places API, Google Maps SDK for Android, Google Maps SDK for iOS, Text Search API
 3. Can use same key for both if both APIs are enabled
 4. Keys are loaded in `app.config.js` via `process.env`
+
+**DOC API (Department of Conservation):**
+1. Get API key from: https://api.doc.govt.nz
+2. Used for 3000+ NZ walking tracks data
+3. Free tier available for non-commercial use
 
 ## Permissions
 

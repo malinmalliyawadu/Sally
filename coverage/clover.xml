@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<coverage generated="1767168030645" clover="3.2.0">
-  <project timestamp="1767168030645" name="All files">
-    <metrics statements="70" coveredstatements="70" conditionals="52" coveredconditionals="42" methods="10" coveredmethods="10" elements="132" coveredelements="122" complexity="0" loc="70" ncloc="70" packages="1" files="1" classes="1"/>
+<coverage generated="1767169497357" clover="3.2.0">
+  <project timestamp="1767169497357" name="All files">
+    <metrics statements="83" coveredstatements="83" conditionals="67" coveredconditionals="57" methods="13" coveredmethods="13" elements="163" coveredelements="153" complexity="0" loc="83" ncloc="83" packages="1" files="1" classes="1"/>
     <file name="explore.utils.ts" path="/Users/malin/Projects/Sally/app/(tabs)/explore.utils.ts">
-      <metrics statements="70" coveredstatements="70" conditionals="52" coveredconditionals="42" methods="10" coveredmethods="10"/>
+      <metrics statements="83" coveredstatements="83" conditionals="67" coveredconditionals="57" methods="13" coveredmethods="13"/>
       <line num="1" count="1" type="stmt"/>
       <line num="4" count="1" type="stmt"/>
       <line num="7" count="1" type="stmt"/>
@@ -74,6 +74,19 @@
       <line num="128" count="91" type="stmt"/>
       <line num="132" count="7" type="stmt"/>
       <line num="135" count="7" type="cond" truecount="2" falsecount="0"/>
+      <line num="139" count="1" type="stmt"/>
+      <line num="140" count="18" type="cond" truecount="2" falsecount="0"/>
+      <line num="143" count="18" type="stmt"/>
+      <line num="153" count="70" type="stmt"/>
+      <line num="157" count="1" type="stmt"/>
+      <line num="162" count="21" type="cond" truecount="2" falsecount="0"/>
+      <line num="165" count="21" type="cond" truecount="2" falsecount="0"/>
+      <line num="166" count="5" type="stmt"/>
+      <line num="170" count="16" type="cond" truecount="4" falsecount="0"/>
+      <line num="171" count="5" type="stmt"/>
+      <line num="175" count="11" type="cond" truecount="5" falsecount="0"/>
+      <line num="176" count="5" type="stmt"/>
+      <line num="180" count="6" type="stmt"/>
     </file>
   </project>
 </coverage>

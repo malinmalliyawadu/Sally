@@ -28,6 +28,7 @@ interface Place {
   docLink?: string;  // DOC website URL for hiking trails
   trackDistance?: string;  // Track length (e.g., "3.1 km one way")
   walkDuration?: string;  // Walk duration (e.g., "2 hr 30 min one way")
+  campingType?: 'nzmca' | 'freedom' | 'doc' | 'general';  // Camping category for prioritization
 }
 
 interface CacheEntry {
@@ -516,6 +517,154 @@ const fetchDOCTrackDetail = async (assetId: string): Promise<DOCTrack | null> =>
   }
 };
 
+// Check if a place name or vicinity contains priority camping keywords
+const isPriorityCamping = (name: string, vicinity?: string): boolean => {
+  const searchText = `${name.toLowerCase()} ${vicinity?.toLowerCase() || ''}`;
+  const priorityKeywords = [
+    'nzmca',
+    'freedom camp',
+    'freedom camping',
+    'doc camp',
+    'doc campsite',
+    'doc campground',
+    'self-contained',
+  ];
+  return priorityKeywords.some(keyword => searchText.includes(keyword));
+};
+
+// Identify camping type from place data
+const identifyCampingType = (
+  name: string,
+  vicinity?: string,
+  types?: string[]
+): 'nzmca' | 'freedom' | 'doc' | 'general' => {
+  const searchText = `${name.toLowerCase()} ${vicinity?.toLowerCase() || ''}`;
+
+  if (searchText.includes('nzmca')) return 'nzmca';
+  if (searchText.includes('freedom camp') || searchText.includes('freedom camping')) return 'freedom';
+  if (searchText.includes('doc camp') || searchText.includes('doc campsite') || searchText.includes('doc campground')) return 'doc';
+  return 'general';
+};
+
+// Fetch camping places with prioritization
+const fetchCampingPlaces = async (
+  latitude: number,
+  longitude: number,
+  searchQuery: string = ''
+): Promise<{ places: Place[] } | null> => {
+  if (!GOOGLE_PLACES_API_KEY) {
+    console.error('Google Places API key not configured');
+    return null;
+  }
+
+  try {
+    const radius = CATEGORY_RADIUS.camping.toString();
+    const types = CATEGORY_TYPE_MAPPING.camping;
+    const typeParam = types ? types.join('|') : '';
+
+    // Perform parallel searches for priority camping and general camping
+    const searchPromises = [
+      // Priority searches with keywords
+      fetch(`${PLACES_API_BASE}?${new URLSearchParams({
+        location: `${latitude},${longitude}`,
+        radius,
+        type: typeParam,
+        keyword: 'NZMCA',
+        key: GOOGLE_PLACES_API_KEY,
+      }).toString()}`),
+      fetch(`${PLACES_API_BASE}?${new URLSearchParams({
+        location: `${latitude},${longitude}`,
+        radius,
+        type: typeParam,
+        keyword: 'freedom camping',
+        key: GOOGLE_PLACES_API_KEY,
+      }).toString()}`),
+      fetch(`${PLACES_API_BASE}?${new URLSearchParams({
+        location: `${latitude},${longitude}`,
+        radius,
+        type: typeParam,
+        keyword: 'DOC camp',
+        key: GOOGLE_PLACES_API_KEY,
+      }).toString()}`),
+      // General camping search (no keyword)
+      fetch(`${PLACES_API_BASE}?${new URLSearchParams({
+        location: `${latitude},${longitude}`,
+        radius,
+        type: typeParam,
+        key: GOOGLE_PLACES_API_KEY,
+      }).toString()}`),
+    ];
+
+    const responses = await Promise.all(searchPromises);
+    const dataPromises = responses.map(r => r.json());
+    const allData = await Promise.all(dataPromises);
+
+    // Merge all results and remove duplicates
+    const placeMap = new Map<string, any>();
+
+    for (const data of allData) {
+      if (data.status === 'OK' && data.results) {
+        for (const result of data.results) {
+          if (!placeMap.has(result.place_id)) {
+            placeMap.set(result.place_id, result);
+          }
+        }
+      }
+    }
+
+    // Convert to Place objects with camping type
+    const places: Place[] = Array.from(placeMap.values()).map((result: any) => {
+      const distance = calculateDistance(
+        latitude,
+        longitude,
+        result.geometry.location.lat,
+        result.geometry.location.lng
+      );
+
+      const campingType = identifyCampingType(result.name, result.vicinity, result.types);
+      const isPriority = isPriorityCamping(result.name, result.vicinity);
+
+      return {
+        place_id: result.place_id,
+        name: result.name,
+        types: result.types,
+        vicinity: result.vicinity,
+        rating: result.rating,
+        user_ratings_total: result.user_ratings_total,
+        geometry: result.geometry,
+        photos: result.photos,
+        opening_hours: result.opening_hours,
+        distance,
+        icon: campingType === 'nzmca' ? 'car-sport-outline' :
+              campingType === 'freedom' ? 'tent-outline' :
+              campingType === 'doc' ? 'leaf-outline' : 'bonfire-outline',
+        category: 'camping' as Category,
+        campingType,
+      };
+    });
+
+    // Apply search query filter if provided
+    let filteredPlaces = places;
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filteredPlaces = places.filter(p =>
+        p.name.toLowerCase().includes(query) ||
+        p.vicinity?.toLowerCase().includes(query)
+      );
+    }
+
+    // Sort: priority camping first (by distance), then general camping (by distance)
+    const priorityCamping = filteredPlaces.filter(p => p.campingType !== 'general').sort((a, b) => a.distance - b.distance);
+    const generalCamping = filteredPlaces.filter(p => p.campingType === 'general').sort((a, b) => a.distance - b.distance);
+
+    return { places: [...priorityCamping, ...generalCamping] };
+
+  } catch (error) {
+    console.error('Error fetching camping places:', error);
+    return null;
+  }
+};
+
 // Fetch DOC tracks
 const fetchDOCTracks = async (): Promise<DOCTrack[]> => {
   if (!DOC_API_KEY) {
@@ -585,6 +734,11 @@ const fetchNearbyPlaces = async (
   searchQuery: string = '',
   pageToken?: string
 ): Promise<{ places: Place[], nextPageToken?: string } | null> => {
+
+  // Special handling for camping category - prioritize NZMCA and freedom camping
+  if (category === 'camping') {
+    return await fetchCampingPlaces(latitude, longitude, searchQuery);
+  }
 
   // Special handling for hiking category - use DOC tracks
   if (category === 'hiking') {
@@ -1070,6 +1224,22 @@ export default function Explore() {
                             <Text style={styles.walkTypeBadgeText}>Short Walk</Text>
                           </View>
                         )}
+                        {/* Camping Type Badges */}
+                        {place.campingType === 'nzmca' && (
+                          <View style={[styles.campingTypeBadge, styles.nzmcaBadge]}>
+                            <Text style={styles.campingTypeBadgeText}>NZMCA</Text>
+                          </View>
+                        )}
+                        {place.campingType === 'freedom' && (
+                          <View style={[styles.campingTypeBadge, styles.freedomBadge]}>
+                            <Text style={styles.campingTypeBadgeText}>Freedom Camping</Text>
+                          </View>
+                        )}
+                        {place.campingType === 'doc' && (
+                          <View style={[styles.campingTypeBadge, styles.docBadge]}>
+                            <Text style={styles.campingTypeBadgeText}>DOC Camp</Text>
+                          </View>
+                        )}
                       </View>
 
                       {/* Rating */}
@@ -1302,6 +1472,27 @@ const styles = StyleSheet.create({
     backgroundColor: '#10b981',
   },
   walkTypeBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#ffffff',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  campingTypeBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  nzmcaBadge: {
+    backgroundColor: '#FF6B35',
+  },
+  freedomBadge: {
+    backgroundColor: '#10b981',
+  },
+  docBadge: {
+    backgroundColor: '#8B4513',
+  },
+  campingTypeBadgeText: {
     fontSize: 11,
     fontWeight: '700',
     color: '#ffffff',

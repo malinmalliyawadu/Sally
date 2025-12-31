@@ -4,6 +4,8 @@ import {
   stringSimilarity,
   scoreMatch,
   cleanSearchQuery,
+  isPriorityCamping,
+  identifyCampingType,
 } from '../app/(tabs)/explore.utils';
 
 describe('explore.utils', () => {
@@ -249,6 +251,99 @@ describe('explore.utils', () => {
 
       // Should still get a decent score due to fuzzy matching and ratings
       expect(score).toBeGreaterThan(70);
+    });
+  });
+
+  describe('isPriorityCamping', () => {
+    it('should detect NZMCA in place name', () => {
+      expect(isPriorityCamping('NZMCA Park', '')).toBe(true);
+      expect(isPriorityCamping('Auckland NZMCA Holiday Park', '')).toBe(true);
+    });
+
+    it('should detect freedom camping in place name', () => {
+      expect(isPriorityCamping('Freedom Camping Area', '')).toBe(true);
+      expect(isPriorityCamping('Lake View Freedom Camp', '')).toBe(true);
+    });
+
+    it('should detect DOC camping in place name', () => {
+      expect(isPriorityCamping('DOC Campsite', '')).toBe(true);
+      expect(isPriorityCamping('Milford Sound DOC Camp', '')).toBe(true);
+      expect(isPriorityCamping('Kaiteriteri DOC Campground', '')).toBe(true);
+    });
+
+    it('should detect self-contained camping', () => {
+      expect(isPriorityCamping('Self-Contained Vehicle Parking', '')).toBe(true);
+    });
+
+    it('should detect keywords in vicinity', () => {
+      expect(isPriorityCamping('Camping Area', 'Near NZMCA park')).toBe(true);
+      expect(isPriorityCamping('Campground', 'Freedom camping allowed')).toBe(true);
+    });
+
+    it('should be case insensitive', () => {
+      expect(isPriorityCamping('nzmca park', '')).toBe(true);
+      expect(isPriorityCamping('FREEDOM CAMP', '')).toBe(true);
+      expect(isPriorityCamping('Doc Campsite', '')).toBe(true);
+    });
+
+    it('should return false for general camping', () => {
+      expect(isPriorityCamping('Holiday Park', '')).toBe(false);
+      expect(isPriorityCamping('Camping Ground', '')).toBe(false);
+      expect(isPriorityCamping('RV Park', '')).toBe(false);
+    });
+
+    it('should not match false positives', () => {
+      expect(isPriorityCamping('Freedom Park', '')).toBe(false); // "freedom" alone
+      expect(isPriorityCamping('Campground', '')).toBe(false); // just "camp" without "freedom"
+    });
+  });
+
+  describe('identifyCampingType', () => {
+    it('should identify NZMCA sites', () => {
+      expect(identifyCampingType('NZMCA Park', '')).toBe('nzmca');
+      expect(identifyCampingType('Auckland NZMCA Holiday Park', '')).toBe('nzmca');
+      expect(identifyCampingType('Campground', 'NZMCA affiliated')).toBe('nzmca');
+    });
+
+    it('should identify freedom camping', () => {
+      expect(identifyCampingType('Freedom Camping Area', '')).toBe('freedom');
+      expect(identifyCampingType('Lake View Freedom Camp', '')).toBe('freedom');
+      expect(identifyCampingType('Parking Area', 'Freedom camping allowed')).toBe('freedom');
+    });
+
+    it('should identify DOC camping', () => {
+      expect(identifyCampingType('DOC Campsite', '')).toBe('doc');
+      expect(identifyCampingType('Milford Sound DOC Camp', '')).toBe('doc');
+      expect(identifyCampingType('Kaiteriteri DOC Campground', '')).toBe('doc');
+      expect(identifyCampingType('Campsite', 'DOC camping area')).toBe('doc');
+    });
+
+    it('should default to general camping', () => {
+      expect(identifyCampingType('Holiday Park', '')).toBe('general');
+      expect(identifyCampingType('Camping Ground', '')).toBe('general');
+      expect(identifyCampingType('RV Park', '')).toBe('general');
+      expect(identifyCampingType('Top 10 Holiday Park', '')).toBe('general');
+    });
+
+    it('should be case insensitive', () => {
+      expect(identifyCampingType('nzmca park', '')).toBe('nzmca');
+      expect(identifyCampingType('FREEDOM CAMP', '')).toBe('freedom');
+      expect(identifyCampingType('Doc Campsite', '')).toBe('doc');
+    });
+
+    it('should prioritize NZMCA over others', () => {
+      // If a place has NZMCA in name, it should be tagged as NZMCA even if it mentions freedom camping
+      expect(identifyCampingType('NZMCA Park with freedom camping', '')).toBe('nzmca');
+    });
+
+    it('should prioritize freedom over DOC when both present', () => {
+      // Freedom camping is checked before DOC
+      expect(identifyCampingType('Freedom camping near DOC area', '')).toBe('freedom');
+    });
+
+    it('should handle edge cases', () => {
+      expect(identifyCampingType('', '')).toBe('general');
+      expect(identifyCampingType('Camp', undefined)).toBe('general');
     });
   });
 });

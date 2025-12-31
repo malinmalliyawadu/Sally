@@ -134,3 +134,48 @@ export const cleanSearchQuery = (trackName: string): string => {
   // If nothing meaningful left, return original
   return cleaned.length > 0 ? `${cleaned} hike` : trackName;
 };
+
+// Check if a place name or vicinity contains priority camping keywords
+export const isPriorityCamping = (name: string, vicinity?: string): boolean => {
+  const searchText = `${name.toLowerCase()} ${vicinity?.toLowerCase() || ''}`;
+
+  // Check for priority camping keywords (exact phrases)
+  const priorityKeywords = [
+    'nzmca',
+    'freedom camp',
+    'freedom camping',
+    'doc camp',
+    'doc campsite',
+    'doc campground',
+    'self-contained',
+  ];
+
+  return priorityKeywords.some(keyword => searchText.includes(keyword));
+};
+
+// Identify camping type from place data
+export const identifyCampingType = (
+  name: string,
+  vicinity?: string,
+  types?: string[]
+): 'nzmca' | 'freedom' | 'doc' | 'general' => {
+  const searchText = `${name.toLowerCase()} ${vicinity?.toLowerCase() || ''}`;
+
+  // Check for NZMCA
+  if (searchText.includes('nzmca')) {
+    return 'nzmca';
+  }
+
+  // Check for freedom camping
+  if (searchText.includes('freedom camp') || searchText.includes('freedom camping')) {
+    return 'freedom';
+  }
+
+  // Check for DOC camping
+  if (searchText.includes('doc camp') || searchText.includes('doc campsite') || searchText.includes('doc campground')) {
+    return 'doc';
+  }
+
+  // Default to general camping
+  return 'general';
+};
